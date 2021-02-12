@@ -1,0 +1,234 @@
+﻿@model PurchaseOrderPrintModel
+
+@{
+    Layout = "~/Views/Shared/_AdminPopupLayout.cshtml";
+}
+
+@{
+    var primarySystemCurrencySymbol = EngineContext.Current.Resolve<BaseEAM.Core.IWorkContext>().WorkingCurrency.CurrencySymbol;
+}
+
+
+<style type="text/css">
+    .document-title h2, .document-title h3 {
+        display: inline-block;
+    }
+
+    .table > tbody > tr > .no-line {
+        border-top: none;
+    }
+
+    .table > thead > tr > .no-line {
+        border-bottom: none;
+    }
+
+    .table > tbody > tr > .thick-line {
+        border-top: 2px solid;
+    }
+</style>
+
+<div class="container">
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="document-title">
+                <h2>Purchase Order # @Model.Number</h2>
+            </div>
+            <br>
+            <div class="row">
+                <div class="col-xs-6">
+                    <strong>@T("PurchaseOrder.DateOrdered"):</strong> @(Model.DateOrdered.HasValue ? Model.DateOrdered.Value.ToString("MM/dd/yyyy HH:mm:ss") : "")<br>
+                    <strong>@T("PurchaseOrder.ExpectedDeliveryDate"):</strong> @(Model.ExpectedDeliveryDate.HasValue ? Model.ExpectedDeliveryDate.Value.ToString("MM/dd/yyyy HH:mm:ss") : "")<br>
+                    <strong>@T("PurchaseOrder.PaymentTerm"):</strong> @Model.PaymentTermName
+                </div>
+            </div>
+            <br>
+            <div class="row">
+                <div class="col-xs-6">
+                    <address>
+                        <strong>Bill To:</strong><br>
+                        @if (!string.IsNullOrEmpty(Model.BillToAddressCountry))
+                        {
+                            @Model.BillToAddressCountry<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.BillToAddressStateProvince))
+                        {
+                            @Model.BillToAddressStateProvince<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.BillToAddressCity))
+                        {
+                            @Model.BillToAddressCity<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.BillToAddressAddress1))
+                        {
+                            @Model.BillToAddressAddress1<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.BillToAddressAddress2))
+                        {
+                            @Model.BillToAddressAddress2<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.BillToAddressZipPostalCode))
+                        {
+                            @Model.BillToAddressZipPostalCode<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.BillToAddressPhoneNumber))
+                        {
+                            @Model.BillToAddressPhoneNumber<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.BillToAddressFaxNumber))
+                        {
+                            @Model.BillToAddressFaxNumber<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.BillToAddressEmail))
+                        {
+                            @Model.BillToAddressEmail<br>
+                        }
+                    </address>
+                </div>
+                <div class="col-xs-6 text-right">
+                    <address>
+                        <strong>Ship To:</strong><br>
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressCountry))
+                        {
+                            @Model.ShipToAddressCountry<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressStateProvince))
+                        {
+                            @Model.ShipToAddressStateProvince<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressCity))
+                        {
+                            @Model.ShipToAddressCity<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressAddress1))
+                        {
+                            @Model.ShipToAddressAddress1<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressAddress2))
+                        {
+                            @Model.ShipToAddressAddress2<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressZipPostalCode))
+                        {
+                            @Model.ShipToAddressZipPostalCode<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressPhoneNumber))
+                        {
+                            @Model.ShipToAddressPhoneNumber<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressFaxNumber))
+                        {
+                            @Model.ShipToAddressFaxNumber<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressEmail))
+                        {
+                            @Model.ShipToAddressEmail<br>
+                        }
+                    </address>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title"><strong>Purchase Order Summary</strong></h3>
+                </div>
+                <div class="panel-body">
+                    <div class="table-responsive">
+                        <table class="table table-condensed">
+                            <thead>
+                                <tr>
+                                    <td class="text-center"><strong>@T("Common.Sequence")</strong></td>
+                                    <td class="text-center"><strong>@T("Item")</strong></td>
+                                    <td class="text-center"><strong>@T("UnitOfMeasure")</strong></td>
+                                    <td class="text-center"><strong>@T("PurchaseOrderItem.UnitPrice") [@primarySystemCurrencySymbol]</strong></td>
+                                    <td class="text-center"><strong>@T("PurchaseOrderItem.QuantityOrdered")</strong></td>
+                                    <td class="text-center"><strong>@T("PurchaseOrderItem.TaxRate")</strong></td>
+                                    <td class="text-center"><strong>@T("PurchaseOrderItem.TaxAmount") [@primarySystemCurrencySymbol]</strong></td>
+                                    <td class="text-center"><strong>@T("PurchaseOrderItem.Subtotal") [@primarySystemCurrencySymbol]</strong></td>
+                                    <td class="text-center"><strong>@T("PurchaseOrderItem.SubtotalWithTax") [@primarySystemCurrencySymbol]</strong></td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach(var item in Model.PurchaseOrderItems)
+                                {
+                                    <tr>
+                                        <td class="text-center"><strong>@item.Sequence</strong></td>
+                                        <td class="text-center"><strong>@item.ItemName</strong></td>
+                                        <td class="text-center"><strong>@item.ItemUnitOfMeasureName</strong></td>
+                                        <td class="text-center"><strong>@(item.UnitPrice.HasValue ? item.UnitPrice.Value.ToString("F") : "")</strong></td>
+                                        <td class="text-center"><strong>@(item.QuantityOrdered.HasValue ? item.QuantityOrdered.Value.ToString("F") : "")</strong></td>
+                                        <td class="text-center"><strong>@(item.TaxRate.HasValue ? item.TaxRate.Value.ToString("F") : "")</strong></td>
+                                        <td class="text-center"><strong>@(item.TaxAmount.HasValue ? item.TaxAmount.Value.ToString("F") : "")</strong></td>
+                                        <td class="text-center"><strong>@(item.Subtotal.HasValue ? item.Subtotal.Value.ToString("F") : "")</strong></td>
+                                        <td class="text-center"><strong>@(item.SubtotalWithTax.HasValue ? item.SubtotalWithTax.Value.ToString("F") : "")</strong></td>
+                                    </tr>
+                                }
+                                <tr>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line text-center"><strong>@T("PurchaseOrder.Subtotal") [@primarySystemCurrencySymbol]</strong></td>
+                                    <td class="thick-line text-center">@(Model.Subtotal.HasValue ? Model.Subtotal.Value.ToString("F") : "")</td>
+                                </tr>
+                                <tr>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line text-center"><strong>@T("PurchaseOrder.SubtotalWithTax") [@primarySystemCurrencySymbol]</strong></td>
+                                    <td class="thick-line text-center">@(Model.SubtotalWithTax.HasValue ? Model.SubtotalWithTax.Value.ToString("F") : "")</td>
+                                </tr>
+                                @foreach (var item in Model.PurchaseOrderMiscCosts)
+                                {
+                                    <tr>
+                                        <td class="thick-line"></td>
+                                        <td class="thick-line"></td>
+                                        <td class="thick-line"></td>
+                                        <td class="thick-line"></td>
+                                        <td class="thick-line"></td>
+                                        <td class="thick-line"></td>
+                                        <td class="thick-line"></td>
+                                        <td class="thick-line text-center"><strong>@item.POMiscCostTypeName [@primarySystemCurrencySymbol]</strong></td>
+                                        <td class="thick-line text-center">@(item.Amount.HasValue ? item.Amount.Value.ToString("F") : "")</td>
+                                    </tr>
+                                }
+                                <tr>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line text-center"><strong>@T("PurchaseOrder.Total") [@primarySystemCurrencySymbol]</strong></td>
+                                    <td class="thick-line text-center">@(Model.Total.HasValue ? Model.Total.Value.ToString("F") : "")</td>
+                                </tr>
+                                <tr>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line text-center"><strong>@T("PurchaseOrder.TotalWithTax") [@primarySystemCurrencySymbol]</strong></td>
+                                    <td class="thick-line text-center">@(Model.TotalWithTax.HasValue ? Model.TotalWithTax.Value.ToString("F") : "")</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

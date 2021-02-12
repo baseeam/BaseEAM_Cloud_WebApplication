@@ -1,0 +1,274 @@
+﻿@using BaseEAM.Services.Security
+@model PurchaseOrderItemModel
+@{
+    var permissionService = EngineContext.Current.Resolve<BaseEAM.Services.IPermissionService>();
+    var allowCreate = permissionService.Authorize(StandardPermissionName.Purchasing_PurchaseOrder_Create);
+    var allowRead = permissionService.Authorize(StandardPermissionName.Purchasing_PurchaseOrder_Read);
+    var allowUpdate = permissionService.Authorize(StandardPermissionName.Purchasing_PurchaseOrder_Update);
+    var allowDelete = permissionService.Authorize(StandardPermissionName.Purchasing_PurchaseOrder_Delete);
+
+    var primarySystemCurrencySymbol = EngineContext.Current.Resolve<BaseEAM.Core.IWorkContext>().WorkingCurrency.CurrencySymbol;
+}
+
+<div id="panel-purchaseOrderItem" class="panel panel-default eam-panel">
+    <div class="panel-heading">
+        <button type="button" id="savePurchaseOrderItemDetail" class="btn btn-primary@(allowCreate || allowUpdate ? "" : " none-display")" title="@T("Common.Save")">
+            <i class="fa fa-floppy-o"></i>
+        </button>
+        <button type="button" id="cancelPurchaseOrderItemDetail" class="btn btn-primary" title="@T("Common.Cancel")">
+            <i class="fa fa-ban"></i>
+        </button>
+    </div>
+    <div class="panel-body">
+        @Html.Hidden("PurchaseOrderId", Model.PurchaseOrderId)
+        @Html.Hidden("PurchaseOrderItemId", Model.Id)
+        <div id="purchaseOrderItem-error" class="validation-summary-errors none-display">
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.Sequence, required: true)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.Sequence)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.ItemId, required: true)
+                        @Html.HiddenFor(model => model.ItemId)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.ItemLookupFor(model => model.ItemName)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.ItemUnitOfMeasureId)
+                    </div>
+                    <div class="col-md-9">
+                        <div class="form-text-row" id="uom">
+                            @(Model.ItemUnitOfMeasureId != null ? Model.ItemUnitOfMeasureName : "")
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.UnitPrice, required: true)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.UnitPrice, postfix: primarySystemCurrencySymbol)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.QuantityOrdered)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.QuantityOrdered)
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.TaxRate)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.TaxRate)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.TaxAmount)
+                        @Html.HiddenFor(model => model.TaxAmount)
+                    </div>
+                    <div class="col-md-9">
+                        <div class="form-text-row" id="taxAmount">
+                            @Html.DisplayFor(model => model.TaxAmount) @(primarySystemCurrencySymbol)
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.Subtotal)
+                        @Html.HiddenFor(model => model.Subtotal)
+                    </div>
+                    <div class="col-md-9">
+                        <div class="form-text-row" id="subtotal">
+                            @Html.DisplayFor(model => model.Subtotal) @(primarySystemCurrencySymbol)
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.SubtotalWithTax)
+                        @Html.HiddenFor(model => model.SubtotalWithTax)
+                    </div>
+                    <div class="col-md-9">
+                        <div class="form-text-row" id="subtotalWithTax">
+                            @Html.DisplayFor(model => model.SubtotalWithTax) @(primarySystemCurrencySymbol)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr />
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.QuantityReceived)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.QuantityReceived)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.ReceiveToStoreId, required: true)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamComboBoxFor(model => model.ReceiveToStoreId, "StoreList", "Site",
+                                            new RouteValueDictionary { { "parentFieldName", "SiteId" } }, true)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.ReceiveToStoreLocatorId, required: true)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamComboBoxFor(model => model.ReceiveToStoreLocatorId, "GetStoreLocators", "Common",
+                                            new RouteValueDictionary { { "parentFieldName", "ReceiveToStoreId" }, { "additionalField", "ItemId" }, { "additionalValue", "" } }, true)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        function calculateSubtotal() {
+            var subtotal, subtotalWithTax, taxAmount;
+
+            var quantityOrdered = parseFloat($("#QuantityOrdered").val());
+            var unitPrice = parseFloat($("#UnitPrice").val());
+            var taxRate = parseFloat($("#TaxRate").val());
+
+            if (!isNaN(quantityOrdered) && !isNaN(unitPrice)) {
+                subtotal = subtotalWithTax = quantityOrdered * unitPrice;
+            }
+
+            if (!isNaN(taxRate) && subtotal > 0) {
+                taxAmount = subtotal * taxRate / 100;
+                subtotalWithTax = subtotal + taxAmount;
+            }
+
+            if (taxAmount > 0) {
+                $("#TaxAmount").val(taxAmount);
+                $("#taxAmount").html(taxAmount);
+            }
+
+            if (subtotal > 0) {
+                $("#Subtotal").val(subtotal);
+                $("#subtotal").html(subtotal);
+            }
+
+            if (subtotalWithTax > 0) {
+                $("#SubtotalWithTax").val(subtotalWithTax);
+                $("#subtotalWithTax").html(subtotalWithTax);
+            }
+        }
+
+        $("#savePurchaseOrderItemDetail").click(function (e) {
+            e.preventDefault();
+            var $group = $("#panel-purchaseOrderItem :input");
+            var postData = $group.serializeJSON({ checkboxUncheckedValue: "false" });
+            //change Id property name so it can map to MVC model
+            postData.Id = postData.PurchaseOrderItemId;
+            addAntiForgeryToken(postData);
+
+            $.ajax({
+                cache: false,
+                type: "POST",
+                url: "@(Url.Action("SavePurchaseOrderItem", "PurchaseOrder"))",
+                data: postData,
+                success: function (data) {
+                    if (data && data.Errors) {
+                        showErrors(data.Errors, '#purchaseOrderItem-error');
+                    } else {
+                        //then toggle the panel
+                        togglePanelPurchaseOrderItem(false);
+
+                        //refresh grid
+                        var grid = $('#purchaseOrderItems-grid').data('kendoGrid');
+                        grid.dataSource.page(1);
+                    }
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    showBSModal({ title: 'ERROR', body: thrownError });
+                },
+                traditional: true
+            });
+        });
+
+        $("#cancelPurchaseOrderItemDetail").click(function (e) {
+            e.preventDefault();
+            var postData = {
+                id: $("#PurchaseOrderItemId").val()
+            };
+            addAntiForgeryToken(postData);
+
+            $.ajax({
+                cache: false,
+                type: "POST",
+                url: "@(Url.Action("CancelPurchaseOrderItem", "PurchaseOrder"))",
+                data: postData,
+                success: function (data) {
+                    //toggle the panel
+                    togglePanelPurchaseOrderItem(false);
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    showBSModal({ title: 'ERROR', body: thrownError });
+                },
+                traditional: true
+            });
+        });
+
+        window.EventBroker.subscribe(BaseEam.Events.SLItemSelected, function (message, data) {
+            var postData = {
+                itemId: $("#ItemId").val()
+            };
+            addAntiForgeryToken(postData);
+
+            $.ajax({
+                cache: false,
+                type: "POST",
+                url: "@(Url.Action("ItemInfo", "Item"))",
+                data: postData,
+                success: function (data) {
+                    if (data != null && data.itemInfo != null) {
+                        $("#panel-purchaseOrderItem").find("#uom").html(data.itemInfo.UnitOfMeasure.Name);
+                        $("#panel-purchaseOrderItem").find("#UnitPrice").val(data.itemInfo.UnitPrice);
+                    }
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    showBSModal({ title: 'ERROR', body: thrownError });
+                },
+                traditional: true
+            });
+        });
+
+        $("#QuantityOrdered").blur(function () {
+            calculateSubtotal();
+        });
+
+        $("#UnitPrice").blur(function () {
+            calculateSubtotal();
+        });
+
+        $("#TaxRate").blur(function () {
+            calculateSubtotal();
+        });
+
+    </script>
+</div>

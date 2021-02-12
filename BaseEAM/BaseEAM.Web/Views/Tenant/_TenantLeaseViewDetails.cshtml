@@ -1,0 +1,206 @@
+﻿@using BaseEAM.Services.Security
+@model TenantLeaseModel
+@{
+    var permissionService = EngineContext.Current.Resolve<BaseEAM.Services.IPermissionService>();
+    var primarySystemCurrencySymbol = EngineContext.Current.Resolve<BaseEAM.Core.IWorkContext>().WorkingCurrency.CurrencySymbol;
+    var defaultGridPageSize = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().DefaultGridPageSize;
+    var gridPageSizes = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().GridPageSizes;
+
+    var allowCreate = permissionService.Authorize(StandardPermissionName.Property_Tenant_Create);
+    var allowRead = permissionService.Authorize(StandardPermissionName.Property_Tenant_Read);
+    var allowUpdate = permissionService.Authorize(StandardPermissionName.Property_Tenant_Update);
+    var allowDelete = permissionService.Authorize(StandardPermissionName.Property_Tenant_Delete);
+}
+
+<div id="panel-tenantLease" class="panel panel-default eam-panel">
+    <div class="panel-heading">
+        <button type="button" id="cancelTenantLease" class="btn btn-primary" title="@T("Common.Cancel")">
+            <i class="fa fa-ban"></i>
+        </button>
+    </div>
+    <div class="panel-body">
+        @Html.Hidden("TenantId", Model.TenantId)
+        @Html.Hidden("TenantLeaseId", Model.Id)
+        <h4>@T("TenantLease.RentalTermAndDate")</h4>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.TermStartDate, required: true)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.TermStartDate)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.TermNumber, required: true)
+                    </div>
+                    <div class="col-md-4">
+                        @Html.BaseEamDropDownListFor(model => model.TermNumber, Model.AvailableTermNumbers, new { data_bind = "disable: isTermIsMonthToMonth()" })
+                        @Html.BaseEamCheckBoxFor(model => model.TermIsMonthToMonth) @T("TenantLease.TermIsMonthToMonth")
+                    </div>
+                    <div class="col-md-5">
+                        @Html.EnumDropDownListFor(model => model.TermPeriod, new { @class = "form-control", data_bind = "disable: isTermIsMonthToMonth()" })
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.TermEndDate)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.TermEndDate, dataBind: "dateEnabled: !isTermIsMonthToMonth()")
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.TermRentAmount, required: true)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.TermRentAmount, postfix: primarySystemCurrencySymbol)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.DueFrequency, required: true)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.EnumDropDownListFor(model => model.DueFrequency, new { @class = "form-control" })
+                        <div class="row" data-bind="visible: isBiMonthly()">
+                            <h5><b>@T("TenantLease.BiMonthlyOn")</b></h5>
+                            <div class="col-md-6">
+                                @Html.BaseEamDropDownListFor(model => model.BiMonthlyStart, Model.AvailableBiMonthlyStarts)
+                            </div>
+                            <div class="col-md-6">
+                                @Html.BaseEamDropDownListFor(model => model.BiMonthlyEnd, Model.AvailableBiMonthlyEnds)
+                            </div>
+                            <b>@T("TenantLease.BiMonthlyOnNote")</b>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.FirstPaymentDate, required: true)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.FirstPaymentDate)
+                    </div>
+                </div>
+            </div>
+        </div>
+        <h4>@T("TenantLease.Charges")</h4>
+        <div class="row">
+            <div id="tenantLeaseCharges-grid"></div>
+            <script>
+                var gridCheckboxHandler1 = new BaseEam.CheckBoxHandler('tenantLeaseCharges-grid');
+                gridCheckboxHandler1.init();
+
+                $(document).ready(function () {
+                    $("#tenantLeaseCharges-grid").kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("TenantLeaseChargeList", "TenantLease", new { tenantLeaseId = Model.Id }))",
+                                    type: "POST",
+                                    dataType: "json",
+                                    data: addAntiForgeryToken
+                                },
+                                //This is used to map field to format that the server can understand
+                                //it runs after the data (additionalData) populated
+                                parameterMap: function (data, operation) {
+                                    sortMapping = [{ from: "ChargeTypeName", to: "ChargeType.Name" }];
+                                    BaseEam.Grid.mapSortColumns(data.sort, sortMapping);
+                                    return data;
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: "Id"
+                                }
+                            },
+                            error: function(e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)],
+                            @Html.Partial("_GridPagerMessages")
+                        },
+                        sortable: true,
+                        editable: false,
+                        scrollable: false,
+                        dataBound: gridCheckboxHandler1.onDataBound,
+                        columns: [{
+                            field: "Id",
+                            headerTemplate: "<input id='tenantLeaseCharges-grid-mastercheckbox' type='checkbox'/>",
+                            headerAttributes: { style: "text-align:center" },
+                            attributes: { style: "text-align:center" },
+                            template: "<input type='checkbox' value='#=Id#' class='checkboxGroups'/>",
+                            width: 50,
+                            sortable: false
+                        },{
+                            field: "ChargeTypeName",
+                            title: "@T("ChargeType")"
+                        }, {
+                            field: "ChargeAmount",
+                            title: "@T("TenantLeaseCharge.ChargeAmount") [@(primarySystemCurrencySymbol)]",
+                            template: '#= ChargeAmount != null ? kendo.toString(ChargeAmount, "n") : "" #'
+                        },{
+                            field: "AmountIsOverridable",
+                            title: "@T("TenantLeaseCharge.AmountIsOverridable")"
+                        }, {
+                            field: "ChargeDueTypeText",
+                            title: "@T("TenantLeaseCharge.ChargeDueType")",
+                            sortable: false
+                        }, {
+                            field: "ValidFrom",
+                            title: "@T("TenantLeaseCharge.ValidFrom")",
+                            template: '#= ValidFrom != null ? kendo.toString(kendo.parseDate(ValidFrom, "MM/dd/yyyy HH:mm"), "MM/dd/yyyy HH:mm") : "" #',
+                        }, {
+                            field: "ValidTo",
+                            title: "@T("TenantLeaseCharge.ValidTo")",
+                            template: '#= ValidTo != null ? kendo.toString(kendo.parseDate(ValidTo, "MM/dd/yyyy HH:mm"), "MM/dd/yyyy HH:mm") : "" #',
+                        }]
+                    });
+                });
+            </script>
+        </div>
+    </div>
+    <script type="text/javascript">
+        $("#cancelTenantLease").click(function (e) {
+            e.preventDefault();
+            var postData = {
+                id: $("#TenantLeaseId").val()
+            };
+            addAntiForgeryToken(postData);
+
+            $.ajax({
+                cache: false,
+                type: "POST",
+                url: "@(Url.Action("CancelTenantLease", "Tenant"))",
+                data: postData,
+                success: function (data) {
+                    //toggle the panel
+                    togglePanelTenantLease(false);
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    showBSModal({ title: 'ERROR', body: thrownError });
+                },
+                traditional: true
+            });
+        });
+    </script>
+</div>

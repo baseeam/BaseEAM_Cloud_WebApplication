@@ -1,0 +1,134 @@
+﻿@using BaseEAM.Services.Security
+@model SLATermModel
+@{
+    var permissionService = EngineContext.Current.Resolve<BaseEAM.Services.IPermissionService>();
+    var allowCreate = permissionService.Authorize(StandardPermissionName.Administration_SLADefinition_Create);
+    var allowRead = permissionService.Authorize(StandardPermissionName.Administration_SLADefinition_Read);
+    var allowUpdate = permissionService.Authorize(StandardPermissionName.Administration_SLADefinition_Update);
+    var allowDelete = permissionService.Authorize(StandardPermissionName.Administration_SLADefinition_Delete);
+
+    var primarySystemCurrencySymbol = EngineContext.Current.Resolve<BaseEAM.Core.IWorkContext>().WorkingCurrency.CurrencySymbol;
+}
+
+<div id="panel-slaTerm" class="panel panel-default eam-panel">
+    <div class="panel-heading">
+        <button type="button" id="saveSLATerm" class="btn btn-primary@(allowCreate || allowUpdate ? "" : " none-display")" title="@T("Common.Save")">
+            <i class="fa fa-floppy-o"></i>
+        </button>
+        <button type="button" id="cancelSLATerm" class="btn btn-primary" title="@T("Common.Cancel")">
+            <i class="fa fa-ban"></i>
+        </button>
+    </div>
+    <div class="panel-body">
+        @Html.Hidden("SLADefinitionId", Model.SLADefinitionId)
+        @Html.Hidden("SLATermId", Model.Id)
+        <div id="slaTerm-error" class="validation-summary-errors none-display">
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.Name, required: true)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.Name)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.TrackingBaseField, required: true)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.TrackingBaseField)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.TrackingField, required: true)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.TrackingField)
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.LimitHours, required: true)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.LimitHours)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.LimitMinutes, required: true)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.LimitMinutes)
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr />
+        <h4>@T("NotificationSequences")</h4>
+        @Html.Partial("_NotificationSequences", new NotificationSequenceModel { SLATermId = Model.Id })
+    </div>
+    <script type="text/javascript">
+        $("#saveSLATerm").click(function (e) {
+            e.preventDefault();
+            var $group = $("#panel-slaTerm :input");
+            var postData = $group.serializeJSON({ checkboxUncheckedValue: "false" });
+            //change Id property name so it can map to MVC model
+            postData.Id = postData.SLATermId;
+            addAntiForgeryToken(postData);
+
+            $.ajax({
+                cache: false,
+                type: "POST",
+                url: "@(Url.Action("SaveSLATerm", "SLADefinition"))",
+                data: postData,
+                success: function (data) {
+                    if (data && data.Errors) {
+                        showErrors(data.Errors, '#slaTerm-error');
+                    } else {
+                        //then toggle the panel
+                        togglePanelSLATerm(false);
+
+                        //refresh grid
+                        var grid = $('#slaTerms-grid').data('kendoGrid');
+                        grid.dataSource.page(1);
+                    }
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    showBSModal({ title: 'ERROR', body: thrownError });
+                },
+                traditional: true
+            });
+        });
+
+        $("#cancelSLATerm").click(function (e) {
+            e.preventDefault();
+            var postData = {
+                id: $("#SLATermId").val()
+            };
+            addAntiForgeryToken(postData);
+
+            $.ajax({
+                cache: false,
+                type: "POST",
+                url: "@(Url.Action("CancelSLATerm", "SLADefinition"))",
+                data: postData,
+                success: function (data) {
+                    //toggle the panel
+                    togglePanelSLATerm(false);
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    showBSModal({ title: 'ERROR', body: thrownError });
+                },
+                traditional: true
+            });
+        });
+
+    </script>
+</div>

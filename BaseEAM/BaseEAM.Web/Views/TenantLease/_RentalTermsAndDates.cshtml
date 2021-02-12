@@ -1,0 +1,249 @@
+﻿@using BaseEAM.Services.Security
+@model TenantLeaseModel
+@{
+    var defaultGridPageSize = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().DefaultGridPageSize;
+    var gridPageSizes = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().GridPageSizes;
+    var primarySystemCurrencySymbol = EngineContext.Current.Resolve<BaseEAM.Core.IWorkContext>().WorkingCurrency.CurrencySymbol;
+
+    var permissionService = EngineContext.Current.Resolve<BaseEAM.Services.IPermissionService>();
+    var allowCreate = permissionService.Authorize(StandardPermissionName.Property_TenantLease_Create);
+    var allowRead = permissionService.Authorize(StandardPermissionName.Property_TenantLease_Read);
+    var allowUpdate = permissionService.Authorize(StandardPermissionName.Property_TenantLease_Update);
+    var allowDelete = permissionService.Authorize(StandardPermissionName.Property_TenantLease_Delete);
+}
+
+
+<div class="panel-group">
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <h4>@T("TenantLease.RentalTermAndDate")</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.TermStartDate, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.TermStartDate)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.TermNumber, required: true)
+                        </div>
+                        <div class="col-md-4">
+                            @Html.BaseEamDropDownListFor(model => model.TermNumber, Model.AvailableTermNumbers, new { data_bind = "disable: isTermIsMonthToMonth()" })
+                            @Html.BaseEamCheckBoxFor(model => model.TermIsMonthToMonth) @T("TenantLease.TermIsMonthToMonth")
+                        </div>
+                        <div class="col-md-5">
+                            @Html.EnumDropDownListFor(model => model.TermPeriod, new { @class = "form-control", data_bind = "disable: isTermIsMonthToMonth()" })
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.TermEndDate)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.TermEndDate, dataBind: "dateEnabled: !isTermIsMonthToMonth()")
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.TermRentAmount, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.TermRentAmount, postfix: primarySystemCurrencySymbol)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.DueFrequency, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.EnumDropDownListFor(model => model.DueFrequency, new { @class = "form-control" })
+                            <div class="row" data-bind="visible: isBiMonthly()">
+                                <h5><b>@T("TenantLease.BiMonthlyOn")</b></h5>
+                                <div class="col-md-6">
+                                    @Html.BaseEamDropDownListFor(model => model.BiMonthlyStart, Model.AvailableBiMonthlyStarts)
+                                </div>
+                                <div class="col-md-6">
+                                    @Html.BaseEamDropDownListFor(model => model.BiMonthlyEnd, Model.AvailableBiMonthlyEnds)
+                                </div>
+                                <b>@T("TenantLease.BiMonthlyOnNote")</b>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.FirstPaymentDate, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.FirstPaymentDate)
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr />
+            <h4>@T("TenantLease.TenantLeasePaymentSchedule")</h4>
+            <div id="group-tenantLeasePaymentSchedules" class="panel-group">
+                <div class="validation-summary-errors none-display" id="tenantLeasePaymentSchedule-error">
+                </div>
+                <div class="panel panel-default">
+                    <div class="panel-body">
+                        <div id="tenantLeasePaymentSchedules-grid"></div>
+                        <script>
+                            $(document).ready(function () {
+                                $("#tenantLeasePaymentSchedules-grid").kendoGrid({
+                                    dataSource: {
+                                        type: "json",
+                                        transport: {
+                                            read: {
+                                                url: "@Html.Raw(Url.Action("TenantLeasePaymentScheduleList", "TenantLease"))",
+                                                type: "POST",
+                                                dataType: "json",
+                                                data: additionalData1
+                                            },
+                                            //This is used to map field to format that the server can understand
+                                            //it runs after the data (additionalData) populated
+                                            parameterMap: function (data, operation) {
+                                                //Update the format date time when edit
+                                                for (var model in data.updated) {
+                                                    var dueDate = kendo.parseDate(data.updated[model].DueDate);
+                                                    data.updated[model].DueDate = kendo.toString(dueDate, "MM/dd/yyyy HH:mm");
+                                                }
+                                               return data;
+                                            }
+                                        },
+                                        schema: {
+                                            data: "Data",
+                                            total: "Total",
+                                            errors: "Errors",
+                                            model: {
+                                                id: "Id",
+                                                fields: {
+                                                    Id: { hidden: true, editable: false },
+                                                    TenantLeaseId: { hidden: true, editable: false },
+                                                    DueDate: { editable: true, type: 'date', validation: { required: { message: '@T("TenantLeasePaymentSchedule.DueDate.Required")' } } },
+                                                    DueAmount: { editable: true, type: 'number', validation: { required: { message: '@T("TenantLeasePaymentSchedule.DueAmount.Required")' } } }
+
+                                                }
+                                            }
+                                        },
+                                        batch: true,
+                                        error: function (e) {
+                                            display_kendoui_grid_error(e);
+                                            // Cancel the changes
+                                            this.cancelChanges();
+                                        },
+                                        change: function (e) {
+                                            if (e.action == "itemchange") {
+                                                e.items[0].dirtyFields = e.items[0].dirtyFields || {};
+                                                e.items[0].dirtyFields[e.field] = true;
+                                            }
+                                        },
+                                        pageSize: @(defaultGridPageSize),
+                                        serverPaging: true,
+                                        serverFiltering: true,
+                                        serverSorting: true
+                                    },
+                                    pageable: {
+                                        refresh: true,
+                                        pageSizes: [@(gridPageSizes)],
+                                        @Html.Partial("_GridPagerMessages")
+                                    },
+                                    toolbar: ["save", "cancel"],
+                                    saveChanges: function (e) {
+                                        e.preventDefault();
+                                        BaseEam.Grid.saveChanges('@Url.Action("SaveChanges", "TenantLease")', '#tenantLeasePaymentSchedules-grid', '#tenantLeasePaymentSchedule-error');
+                                    },
+                                    navigatable: true,
+                                    sortable: true,
+                                    editable: true,
+                                    scrollable: false,
+                                    columns: [{
+                                        field: "DueDate",
+                                        title: "@T("TenantLeasePaymentSchedule.DueDate")",
+                                        template: '#= DueDate != null ? kendo.toString(kendo.parseDate(DueDate, "MM/dd/yyyy"), "MM/dd/yyyy") : "" #',
+                                        format: "{0:MM/dd/yyyy}",
+                                    }, {
+                                        field: "DueAmount",
+                                        title: "@T("TenantLeasePaymentSchedule.DueAmount") [@(primarySystemCurrencySymbol)]",
+                                        template: '#= DueAmount != null ? kendo.toString(DueAmount, "n") : "" #',
+                                    }]
+                                });
+                            });
+
+                        </script>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+
+     function additionalData1() {
+        var data = {
+            tenantLeaseId: @Model.Id
+        };
+        addAntiForgeryToken(data);
+        return data;
+    }
+
+     function generateTermEndDate() {
+         var termNumber = parseInt($('#TermNumber').val());
+         var termPeriod = $('#TermPeriod').val();
+         var termStartDate = new Date($('#TermStartDate').val());
+         var termEndDate = termStartDate;
+         //0: month, 1: weeks, 2: days
+         if (termPeriod === '0') {
+             termEndDate.setMonth(termEndDate.getMonth() + termNumber);
+         } else if (termPeriod === '1') {
+             termEndDate.setDate(termEndDate.getDate() + termNumber * 7);
+         } else {
+             termEndDate.setDate(termEndDate.getDate() + termNumber);
+         }
+         $("#TermEndDate").data("kendoDatePicker").value(termEndDate);
+         $(TermEndDate).trigger("change");
+     }
+
+     $(document).ready(function () {
+
+         $("#@Html.FieldIdFor(model => model.TermNumber)").change(function () {
+            generateTermEndDate();
+         });
+
+          $("#@Html.FieldIdFor(model => model.TermPeriod)").change(function () {
+             generateTermEndDate();
+         });
+
+          $("#@Html.FieldIdFor(model => model.TermStartDate)").change(function () {
+              var termStartDate = new Date($('#TermStartDate').val());
+              $("#FirstPaymentDate").data("kendoDatePicker").value(termStartDate);
+              $("#TermEndDate").data("kendoDatePicker").value(termStartDate);
+          });
+
+         $("#@Html.FieldIdFor(model => model.TermIsMonthToMonth)").change(function () {
+             var termIsMonthToMonth = $("#@Html.FieldIdFor(model => model.TermIsMonthToMonth)").is(":checked");
+             viewModel.isTermIsMonthToMonth(termIsMonthToMonth);
+             if (termIsMonthToMonth) {
+                 var termEndDate = new Date($('#TermStartDate').val());
+                 termEndDate.setFullYear(termEndDate.getFullYear() + 20);
+                 $("#TermEndDate").data("kendoDatePicker").value(termEndDate);
+             }
+         });
+
+         $("#@Html.FieldIdFor(model => model.DueFrequency)").change(function () {
+             var dueFrequency = $("#@Html.FieldIdFor(model => model.DueFrequency)").val();
+             //7: BiMonthly
+             if (dueFrequency === '7') {
+                 viewModel.isBiMonthly(true);
+             } else {
+                 viewModel.isBiMonthly(false);
+             }
+         });
+     });
+</script>

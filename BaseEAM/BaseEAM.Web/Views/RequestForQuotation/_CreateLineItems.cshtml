@@ -1,0 +1,113 @@
+﻿@model SearchModel
+@{
+    var defaultGridPageSize = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().DefaultGridPageSize;
+    var gridPageSizes = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().GridPageSizes;
+    var primarySystemCurrencySymbol = EngineContext.Current.Resolve<BaseEAM.Core.IWorkContext>().WorkingCurrency.CurrencySymbol;
+}
+<div class="content" id="createRequestForQuotationItems-popup">
+    <div class="validation-summary-errors none-display" id="createRequestForQuotationItems-error">
+    </div>
+    <div class="form-horizontal">
+        <div class="panel-group">
+            @Html.Partial("Filter", Model)
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <div id="createRequestForQuotationItems-grid"></div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function additionalData() {
+            var data = {
+                searchValues: $("div.panel-search").find(':input').serialize(),
+                requestForQuotationId: $('#Id').val()
+            };
+            addAntiForgeryToken(data);
+            return data;
+        }
+
+        $("#createRequestForQuotationItems-grid").kendoGrid({
+            dataSource: {
+                type: "json",
+                transport: {
+                    read: {
+                        url: "@Html.Raw(Url.Action("CreateRequestForQuotationItemList", "RequestForQuotation"))",
+                        type: "POST",
+                        dataType: "json",
+                        data: additionalData
+                    }
+                },
+                schema: {
+                    data: "Data",
+                    total: "Total",
+                    errors: "Errors",
+                    model: {
+                        id: "ItemId",
+                        fields: {
+                            ItemName: { editable: false },
+                            ItemUnitOfMeasureName: { editable: false },
+                            QuantityRequested: { editable: true, type: 'number', validation: { required: { message: '@T("RequestForQuotationItem.QuantityRequested.Required")'}} }
+                        }
+                    }
+                },
+                batch: true,
+                error: function (e) {
+                    display_kendoui_grid_error(e);
+                    // Cancel the changes
+                    this.cancelChanges();
+                },
+                change: function (e) {
+                    if (e.action == "itemchange") {
+                        e.items[0].dirtyFields = e.items[0].dirtyFields || {};
+                        e.items[0].dirtyFields[e.field] = true;
+                    }
+                },
+                pageSize: @(defaultGridPageSize),
+                serverPaging: true,
+                serverFiltering: true,
+                serverSorting: true
+            },
+            pageable: {
+                refresh: true,
+                pageSizes: [@(gridPageSizes)],
+                @Html.Partial("_GridPagerMessages")
+            },
+            navigatable: true,
+            sortable: true,
+            editable: true,
+            scrollable: false,
+            columns: [{
+                field: "ItemName",
+                title: "@T("Item")"
+            }, {
+                field: "ItemUnitOfMeasureName",
+                title: "@T("UnitOfMeasure")",
+                sortable: false
+            },{
+                field: "QuantityRequested",
+                title: "@T("RequestForQuotationItem.QuantityRequested")",
+                template: '#= QuantityRequested != null ? kendo.toString(QuantityRequested, "n") : "" #',
+                sortable: false
+            }
+            ]
+        });
+
+        //search button
+        $('#createRequestForQuotationItems-popup').find('#search').click(function () {
+            //search
+            var grid = $('#createRequestForQuotationItems-grid').data('kendoGrid');
+            grid.dataSource.page(1); //new search. Set page size to 1
+            //grid.dataSource.read(); we already loaded the grid above using "page" function
+            return false;
+        });
+
+        $("#createRequestForQuotationItems-popup div.panel-search").find(':input').keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#createRequestForQuotationItems-popup').find('#search').click();
+                return false;
+            }
+        });
+    </script>
+</div>

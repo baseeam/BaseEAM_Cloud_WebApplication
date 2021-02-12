@@ -1,0 +1,336 @@
+﻿@using BaseEAM.Services.Security
+@model PurchaseRequestItemModel
+@{
+    var defaultGridPageSize = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().DefaultGridPageSize;
+    var gridPageSizes = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().GridPageSizes;
+    var primarySystemCurrencySymbol = EngineContext.Current.Resolve<BaseEAM.Core.IWorkContext>().WorkingCurrency.CurrencySymbol;
+
+    var permissionService = EngineContext.Current.Resolve<BaseEAM.Services.IPermissionService>();
+    var allowCreate = permissionService.Authorize(StandardPermissionName.Purchasing_PurchaseRequest_Create);
+    var allowRead = permissionService.Authorize(StandardPermissionName.Purchasing_PurchaseRequest_Read);
+    var allowUpdate = permissionService.Authorize(StandardPermissionName.Purchasing_PurchaseRequest_Update);
+    var allowDelete = permissionService.Authorize(StandardPermissionName.Purchasing_PurchaseRequest_Delete);
+}
+<div id="group-purchaseRequestItems" class="panel-group" data-bind="visible: !isNew()">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <button type="button" id="createPurchaseRequestItem" class="btn btn-primary@(allowCreate || allowUpdate ? "" : " none-display")" title="@T("Common.AddNew")">
+                <i class="fa fa-plus-square"></i>
+            </button>
+            <button type="button" id="createPurchaseRequestItems" class="btn btn-primary@(allowCreate || allowUpdate ? "" : " none-display")" title="@T("Common.AddMultiple")">
+                <i class="fa fa-angle-double-down"></i>
+            </button>
+            <button type="button" id="deleteSelectedPurchaseRequestItems" class="btn btn-primary@(allowCreate || allowUpdate ? "" : " none-display")" title="@T("Common.Delete.Selected")">
+                <i class="fa fa-trash-o"></i>
+            </button>
+            <button type="button" id="createRFQ" class="btn btn-primary@(allowCreate || allowUpdate ? "" : " none-display")" title="@T("PurchaseRequest.CreateRFQ")">
+                @T("PurchaseRequest.CreateRFQ")
+            </button>
+            <button type="button" id="createPO" class="btn btn-primary@(allowCreate || allowUpdate ? "" : " none-display")" title="@T("PurchaseRequest.CreatePO")">
+                @T("PurchaseRequest.CreatePO")
+            </button>
+        </div>
+        <div class="panel-body">
+            <div id="purchaseRequestItems-grid"></div>
+            <script>
+                var gridCheckboxHandler = new BaseEam.CheckBoxHandler('purchaseRequestItems-grid');
+                gridCheckboxHandler.init();
+
+                $(document).ready(function () {
+                    $("#purchaseRequestItems-grid").kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("PurchaseRequestItemList", "PurchaseRequest"))",
+                                    type: "POST",
+                                    dataType: "json",
+                                    data: additionalData
+                                },
+                                parameterMap: function(data, operation) {
+                                    sortMapping = [
+                                        {
+                                            from: "ItemName", to: "Item.Name",
+                                            from: "ItemUnitOfMeasureName", to: "Item.UnitOfMeasure.Name"
+                                        }
+                                    ];
+                                    BaseEam.Grid.mapSortColumns(data.sort, sortMapping);
+                                    return data;
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: "Id"
+                                }
+                            },
+                            error: function(e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)],
+                            @Html.Partial("_GridPagerMessages")
+                        },
+                        sortable: true,
+                        editable: false,
+                        scrollable: false,
+                        dataBound: function(e) {
+                            gridCheckboxHandler.onDataBound(e);
+                        },
+                        columns: [{
+                            field: "Id",
+                            headerTemplate: "<input id='purchaseRequestItems-grid-mastercheckbox' type='checkbox'/>",
+                            headerAttributes: { style: "text-align:center" },
+                            attributes: { style: "text-align:center" },
+                            template: "<input type='checkbox' value='#=Id#' class='checkboxGroups'/>",
+                            width: 50,
+                            sortable: false
+                        },{
+                            field: "Sequence",
+                            title: "@T("Common.Sequence")"
+                        },{
+                            field: "ItemName",
+                            title: "@T("Item")"
+                        },{
+                            field: "ItemUnitOfMeasureName",
+                            title: "@T("UnitOfMeasure")"
+                        },{
+                            field: "QuantityRequested",
+                            title: "@T("PurchaseRequestItem.QuantityRequested")",
+                            template: '#= QuantityRequested != null ? kendo.toString(QuantityRequested, "n") : "" #'
+                        }, {
+                            field: "Id",
+                            headerTemplate: "",
+                            width: 100,
+                            template: '<button type="button" class="btn btn-primary@(allowRead || allowUpdate ? "" : " none-display")" onclick="editPurchaseRequestItem(event, #=Id#);"></span><i class="fa fa-pencil aria-hidden="true""></i></a>' +
+                                    '<button type="button" class="deleteRow btn btn-primary@(allowDelete ? "" : " none-display")" onclick="deletePurchaseRequestItem(event, #=Id#);"></span><i class="fa fa-trash aria-hidden="true""></i></a>',
+                            sortable: false
+                        }]
+                    });
+                });
+            </script>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    function createPurchaseRequestItems(e) {
+        e.preventDefault();
+        BaseEam.Grid.saveChanges('@Url.Action("CreatePurchaseRequestItems", "PurchaseRequest")', '#createPurchaseRequestItems-grid', '#createPurchaseRequestItems-error', false);
+    };
+
+    function editPurchaseRequestItem(e, id){
+        e.preventDefault();
+        //check if panel-purchaseRequestItem is open => close it before edit
+        if($('#panel-purchaseRequestItem').is(":visible")){
+            togglePanelPurchaseRequestItem(false);
+        }
+
+        var postData = {
+            id : id
+        };
+        addAntiForgeryToken(postData);
+
+        $.ajax({
+            cache: false,
+            type: "POST",
+            url: "@(Url.Action("PurchaseRequestItem", "PurchaseRequest"))",
+            data: postData,
+            success: function(data) {
+                //append html
+                $("#group-purchaseRequestItems").append(data.Html);
+
+                //apply binding for the newly generated element
+                ko.applyBindings(viewModel, $("#panel-purchaseRequestItem")[0]);
+
+                //then toggle the panel
+                togglePanelPurchaseRequestItem(true);
+            },
+            error: function(xhr, ajaxOptions, thrownError) {
+                showBSModal({title: 'ERROR', body: thrownError});
+            },
+            traditional: true
+        });
+    };
+
+    function deletePurchaseRequestItem(e, id){
+        e.preventDefault();
+        //check if panel-purchaseRequestItem is open => close it before delete
+        if($('#panel-purchaseRequestItem').is(":visible")){
+            togglePanelPurchaseRequestItem(false);
+        }
+
+        BaseEam.Grid.deleteRow($("#Id").val(), id, "@Url.Action("DeletePurchaseRequestItem", "PurchaseRequest")", "purchaseRequestItems-grid", "", true);
+    };
+
+    function additionalData() {
+        var data = {
+            purchaseRequestId: $("#Id").val()
+        };
+        addAntiForgeryToken(data);
+        return data;
+    }
+
+    function togglePanelPurchaseRequestItem(editmode) {
+        if (editmode) {
+            $('#panel-purchaseRequestItem').show();
+            $('#createPurchaseRequestItem').hide();
+            $('#createPurchaseRequestItems').hide();
+            $('#deleteSelectedPurchaseRequestItems').hide();
+            $('#createRFQ').hide();
+            $('#createPO').hide();
+        }
+        else {
+            ////remove the panel html so we won't care
+            //about dirty change tracking for newly added input tag
+            $('#panel-purchaseRequestItem').remove();
+            $('#createPurchaseRequestItem').show();
+            $('#createPurchaseRequestItems').show();
+            $('#deleteSelectedPurchaseRequestItems').show();
+            $('#createRFQ').show();
+            $('#createPO').show();
+        }
+    }
+
+    $(document).ready(function () {
+        $("#createPurchaseRequestItem").click(function(e){
+            e.preventDefault();
+            var postData = {
+                purchaseRequestId : $("#Id").val()
+            };
+            addAntiForgeryToken(postData);
+
+            $.ajax({
+                cache: false,
+                type: "POST",
+                url: "@(Url.Action("CreatePurchaseRequestItem", "PurchaseRequest"))",
+                data: postData,
+                success: function(data) {
+                    //append html
+                    $("#group-purchaseRequestItems").append(data.Html);
+
+                    //then toggle the panel
+                    togglePanelPurchaseRequestItem(true);
+                },
+                error: function(xhr, ajaxOptions, thrownError) {
+                    showBSModal({title: 'ERROR', body: thrownError});
+                },
+                traditional: true
+            });
+        });
+
+        $("#createPurchaseRequestItems").click(function(e){
+            e.preventDefault();
+            $.get('@Url.Action("CreatePurchaseRequestItemsView", "PurchaseRequest")', function(data) {
+                showBSModal({
+                    title: "@T("Common.AddMultiple")",
+                    size: "large",
+                    body: data,
+                    actions: [{
+                        label: '@T("Common.Save")',
+                        cssClass: 'btn-success',
+                        onClick: createPurchaseRequestItems
+                    },{
+                        label: '@T("Common.Cancel")',
+                        cssClass: 'btn-danger',
+                        onClick: function(e){
+                            $(e.target).parents('.modal').modal('hide');
+                        }
+                    }]
+                });
+            });
+        });
+
+        $("#deleteSelectedPurchaseRequestItems").click(function(e){
+            e.preventDefault();
+            BaseEam.Grid.deleteSelectedRows($("#Id").val(), gridCheckboxHandler.selectedIds, "@Url.Action("DeleteSelectedPurchaseRequestItems", "PurchaseRequest")", "purchaseRequestItems-grid", "", true);
+        });
+
+        window.EventBroker.subscribe("grid_batch_saved", function (message, data) {
+            //hide modal popup
+            $('.modal').modal('hide');
+
+            //refresh grid
+            var grid = $('#purchaseRequestItems-grid').data('kendoGrid');
+            grid.dataSource.page(1);
+        });
+
+        $("#createRFQ").click(function (e) {
+            e.preventDefault();
+            $.when(kendo.ui.ExtOkCancelDialog.show({
+                title: "WARNING!",
+                message: '@T("Common.AreYouSure")',
+                icon: 'k-ext-warning'
+            }))
+                .done(function (response) {
+                    if (response.button == "OK") {
+                        var postData = {
+                            purchaseRequestId : $("#Id").val()
+                        };
+                        addAntiForgeryToken(postData);
+                        $.ajax({
+                            cache: false,
+                            type: "POST",
+                            url: "@(Url.Action("CreateRFQ", "PurchaseRequest"))",
+                            data: postData,
+                            success: function (data) {
+                                if (data && data.Errors) {
+                                    showBSModal({ title: 'ERROR', body: data.Errors });
+                                } else {
+
+                                }
+                            },
+                            error: function (xhr, ajaxOptions, thrownError) {
+                                showBSModal({ title: 'ERROR', body: thrownError });
+                            },
+                            traditional: true
+                        });
+                    }
+                });
+        });
+
+        $("#createPO").click(function (e) {
+            e.preventDefault();
+            $.when(kendo.ui.ExtOkCancelDialog.show({
+                title: "Warning!",
+                message: '@T("Common.AreYouSure")',
+                icon: 'k-ext-warning'
+            }))
+                .done(function (response) {
+                    if (response.button == "OK") {
+                        var postData = {
+                            purchaseRequestId : $("#Id").val()
+                        };
+                        addAntiForgeryToken(postData);
+                        $.ajax({
+                            cache: false,
+                            type: "POST",
+                            url: "@(Url.Action("CreatePO", "PurchaseRequest"))",
+                            data: postData,
+                            success: function (data) {
+                                if (data && data.Errors) {
+                                    showBSModal({ title: 'ERROR', body: data.Errors });
+                                } else {
+
+                                }
+                            },
+                            error: function (xhr, ajaxOptions, thrownError) {
+                                showBSModal({ title: 'ERROR', body: thrownError });
+                            },
+                            traditional: true
+                        });
+                    }
+                });
+        });
+    });
+</script>

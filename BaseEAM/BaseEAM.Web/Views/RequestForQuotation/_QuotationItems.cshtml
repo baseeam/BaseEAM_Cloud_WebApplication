@@ -1,0 +1,143 @@
+﻿@using BaseEAM.Services.Security
+@model RequestForQuotationVendorItemModel
+@{
+    var defaultGridPageSize = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().DefaultGridPageSize;
+    var gridPageSizes = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().GridPageSizes;
+    var primarySystemCurrencySymbol = EngineContext.Current.Resolve<BaseEAM.Core.IWorkContext>().WorkingCurrency.CurrencySymbol;
+
+    var permissionService = EngineContext.Current.Resolve<BaseEAM.Services.IPermissionService>();
+    var allowCreate = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Create);
+    var allowRead = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Read);
+    var allowUpdate = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Update);
+    var allowDelete = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Delete);
+}
+<div class="validation-summary-errors none-display" id="quotationItems-error">
+</div>
+<div id="group-quotationItems" class="panel-group">
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <div id="quotationItems-grid"></div>
+            <script>
+                function additionalData4() {
+                    var data = {
+                        requestForQuotationVendorId: '@Model.RequestForQuotationVendorId'
+                    };
+                    addAntiForgeryToken(data);
+                    return data;
+                }
+                $(document).ready(function () {
+                        $("#quotationItems-grid").kendoGrid({
+                            dataSource: {
+                                type: "json",
+                                transport: {
+                                    read: {
+                                        url: "@Html.Raw(Url.Action("QuotationItemList", "RequestForQuotation"))",
+                                        type: "POST",
+                                        dataType: "json",
+                                        data: additionalData4
+                                    },
+                                    parameterMap: function(data, operation) {
+                                        sortMapping = [
+                                            {
+                                                from: "Sequence", to: "RequestForQuotationItem.Sequence",
+                                                from: "ItemName", to: "RequestForQuotationItem.Item.Name",
+                                                from: "ItemUnitOfMeasureName", to: "RequestForQuotationItem.Item.UnitOfMeasure.Name",
+                                                from: "QuantityRequested", to: "RequestForQuotationItem.QuantityRequested"
+                                            }
+                                        ];
+                                        BaseEam.Grid.mapSortColumns(data.sort, sortMapping);
+                                        return data;
+                                    }
+                                },
+                                schema: {
+                                    data: "Data",
+                                    total: "Total",
+                                    errors: "Errors",
+                                    model: {
+                                        id: "Id",
+                                        fields: {
+                                            Sequence: { editable: false },
+                                            ItemName: { editable: false },
+                                            ItemUnitOfMeasureName: { editable: false },
+                                            QuantityRequested: { editable: false },
+                                            QuantityQuoted: { editable: true, type: 'number', validation: { min: 0 } },
+                                            UnitPriceQuoted: { editable: true, type: 'number', validation: { min: 0 } },
+                                            SubtotalQuoted: { type: 'number' },
+                                            IsAwarded: { editable: true, type: 'boolean' },
+                                        }
+                                    }
+                                },
+                                batch: true,
+                                error: function(e) {
+                                    display_kendoui_grid_error(e);
+                                    // Cancel the changes
+                                    this.cancelChanges();
+                                },
+                                pageSize: @(defaultGridPageSize),
+                                serverPaging: true,
+                                serverFiltering: true,
+                                serverSorting: true
+                            },
+                            pageable: {
+                                refresh: true,
+                                pageSizes: [@(gridPageSizes)],
+                                @Html.Partial("_GridPagerMessages")
+                            },
+                            toolbar: ["save", "cancel"],
+                            saveChanges: function(e) {
+                                e.preventDefault();
+                                BaseEam.Grid.saveChanges('@Url.Action("SaveChanges", "RequestForQuotation")', '#quotationItems-grid', '#quotationItems-error');
+                            },
+                            sortable: true,
+                            editable: true,
+                            save: function (data) {
+                                var quantityQuoted = data.values.QuantityQuoted;
+                                var unitPriceQuoted = data.values.UnitPriceQuoted;
+
+                                if (quantityQuoted === null || unitPriceQuoted === null) {
+                                    data.model.set("SubtotalQuoted", 0);
+                                } else if (quantityQuoted >= 0 || unitPriceQuoted >= 0) {
+                                    quantityQuoted = quantityQuoted || data.model.QuantityQuoted;
+                                    unitPriceQuoted = unitPriceQuoted || data.model.UnitPriceQuoted;
+                                    data.model.set("SubtotalQuoted", quantityQuoted * unitPriceQuoted);
+                                }
+                            },
+                            scrollable: false,
+                            columns: [{
+                                field: "Sequence",
+                                title: "@T("Common.Sequence")"
+                            },{
+                                field: "ItemName",
+                                title: "@T("Item")"
+                            },{
+                                field: "ItemUnitOfMeasureName",
+                                title: "@T("UnitOfMeasure")"
+                            },{
+                                field: "QuantityRequested",
+                                title: "@T("RequestForQuotationItem.QuantityRequested")",
+                                template: '#= QuantityRequested != null ? kendo.toString(QuantityRequested, "n") : "" #'
+                            },{
+                                field: "QuantityQuoted",
+                                title: "@T("RequestForQuotationVendorItem.QuantityQuoted")",
+                                template: '#= QuantityQuoted != null ? kendo.toString(QuantityQuoted, "n") : "" #'
+                            },{
+                                field: "UnitPriceQuoted",
+                                title: "@T("RequestForQuotationVendorItem.UnitPriceQuoted") [@(primarySystemCurrencySymbol)]",
+                                template: '#= UnitPriceQuoted != null ? kendo.toString(UnitPriceQuoted, "n") : "" #'
+                            },{
+                                field: "SubtotalQuoted",
+                                title: "@T("RequestForQuotationVendorItem.SubtotalQuoted") [@(primarySystemCurrencySymbol)]",
+                                template: '#= SubtotalQuoted != null ? kendo.toString(SubtotalQuoted, "n") : "" #',
+                                editor: function (cont, options) {
+                                    $("<span>" + options.model.SubtotalQuoted + "</span>").appendTo(cont);
+                                }
+                            },{
+                                field: "IsAwarded",
+                                title: "@T("RequestForQuotationVendorItem.IsAwarded")"
+                            }]
+                        });
+                    });
+            </script>
+        </div>
+    </div>
+</div>

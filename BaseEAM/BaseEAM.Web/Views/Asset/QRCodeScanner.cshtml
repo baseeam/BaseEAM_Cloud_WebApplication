@@ -1,0 +1,27 @@
+﻿@{
+    ViewBag.Title = "QRCodeScanner";
+    Html.AppendScriptParts("~/Scripts/baseeam.qrcodescanner.js");
+    Html.AppendScriptParts("~/Scripts/zxing.qrcodereader.min.js");
+}
+<div class="content-header clearfix">
+    <h1 class="pull-left">
+        @T("Asset.QRCodeScanner")
+    </h1>
+</div>
+@Html.AntiForgeryToken()
+<div class="content">
+    <div id="livestream_scanner">
+        <div>
+            <video id="video" style="width:100%; height: auto"></video>
+        </div>
+    </div>
+    <button type="button" class="btn btn-primary" id="refresh">Refresh</button>
+</div>
+<script>
+    $(document).ready(function () {
+        startScanner();
+        $('#refresh').click(function () {
+            location.reload();
+        });
+    });
+</script>

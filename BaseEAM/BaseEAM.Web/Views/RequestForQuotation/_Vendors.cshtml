@@ -1,0 +1,180 @@
+﻿@using BaseEAM.Services.Security
+@model RequestForQuotationVendorModel
+@{
+    var defaultGridPageSize = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().DefaultGridPageSize;
+    var gridPageSizes = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().GridPageSizes;
+
+    var permissionService = EngineContext.Current.Resolve<BaseEAM.Services.IPermissionService>();
+    var allowCreate = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Create);
+    var allowRead = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Read);
+    var allowUpdate = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Update);
+    var allowDelete = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Delete);
+}
+<div id="group-vendors" class="panel-group">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <button type="button" id="selectVendors" class="btn btn-primary@(allowCreate ? "" : " none-display")" title="@T("SelectVendors")">
+                <i class="fa fa-plus-square"></i>
+            </button>
+            <button type="button" id="deleteSelectedVendors" class="btn btn-primary@(allowCreate || allowUpdate ? "" : " none-display")" title="@T("Common.Delete.Selected")">
+                <i class="fa fa-trash-o"></i>
+            </button>
+        </div>
+        <div class="panel-body">
+            <div id="vendors-grid"></div>
+            <script>
+                var gridCheckboxHandler2 = new BaseEam.CheckBoxHandler('vendors-grid');
+                gridCheckboxHandler2.init();
+
+                $(document).ready(function () {
+                    $("#vendors-grid").kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("VendorList", "RequestForQuotation"))",
+                                    type: "POST",
+                                    dataType: "json",
+                                    data: additionalData2
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: "Id"
+                                }
+                            },
+                            error: function(e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)],
+                            @Html.Partial("_GridPagerMessages")
+                        },
+                        sortable: true,
+                        editable: false,
+                        scrollable: false,
+                        dataBound: gridCheckboxHandler2.onDataBound,
+                        columns: [{
+                            field: "Id",
+                            headerTemplate: "<input id='vendors-grid-mastercheckbox' type='checkbox'/>",
+                            headerAttributes: { style: "text-align:center" },
+                            attributes: { style: "text-align:center" },
+                            template: "<input type='checkbox' value='#=Id#' class='checkboxGroups'/>",
+                            width: 50,
+                            sortable: false
+                        },{
+                            field: "VendorName",
+                            title: "@T("Vendor")"
+                        }, {
+                            field: "VendorContactName",
+                            title: "@T("Contact.Name")"
+                        }, {
+                            field: "VendorContactEmail",
+                            title: "@T("Contact.Email")"
+                        }, {
+                            field: "VendorContactPhone",
+                            title: "@T("Contact.Phone")"
+                        }, {
+                            field: "VendorContactFax",
+                            title: "@T("Contact.Fax")"
+                        }, {
+                            field: "Id",
+                            headerTemplate: "",
+                            width: 50,
+                            template: '<button type="button" class="btn btn-primary@(allowDelete ? "" : " none-display")" href="" onclick="deleteVendor(event, #=Id#);"></span><i class="fa fa-trash aria-hidden="true""></i></a>',
+                            sortable: false
+                        }]
+                    });
+                });
+            </script>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+
+    function deleteVendor(e, id){
+        e.preventDefault();
+
+        BaseEam.Grid.deleteRow($("#Id").val(), id, "@Url.Action("DeleteVendor", "RequestForQuotation")", "vendors-grid", "", true);
+    };
+
+    function additionalData2() {
+        var data = {
+            requestForQuotationId: $("#Id").val()
+        };
+        addAntiForgeryToken(data);
+        return data;
+    }
+
+    function selectVendors(e) {
+        e.preventDefault();
+        var postData = {
+            requestForQuotationId: $("#Id").val(),
+            selectedIds: vendorsCheckboxHandler.selectedIds
+        };
+        addAntiForgeryToken(postData);
+        $.ajax({
+            cache: false,
+            type: "POST",
+            url: '@Url.Action("AddVendors", "RequestForQuotation")',
+            data: postData,
+            success: function (data) {
+                if (data && data.Errors) {
+                    showErrors(data.Errors, '#ml-vendors-error');
+                } else {
+                    //hide modal popup
+                    $(e.target).parents('.modal').modal('hide');
+
+                    //refresh grid
+                    var grid = $('#vendors-grid').data('kendoGrid');
+                    grid.dataSource.page(1);
+                }
+            },
+            error: function (xhr, ajaxOptions, thrownError) {
+                showBSModal({ title: "Error", body: thrownError });
+            },
+            traditional: true
+        });
+    }
+
+    $(document).ready(function () {
+        $("#selectVendors").click(function(e){
+            e.preventDefault();
+            $.get('@Url.Action("MLVendorView", "Lookup")', function(data) {
+                showBSModal({
+                    title: "@T("SelectVendors")",
+                    size: "large",
+                    body: data,
+                    actions: [{
+                        label: '@T("Common.Save")',
+                        cssClass: 'btn-success',
+                        onClick: selectVendors
+                    },{
+                        label: '@T("Common.Cancel")',
+                        cssClass: 'btn-danger',
+                        onClick: function(e){
+                            $(e.target).parents('.modal').modal('hide');
+                        }
+                    }]
+                });
+            });
+        });
+
+        $("#deleteSelectedVendors").click(function(e){
+            e.preventDefault();
+            BaseEam.Grid.deleteSelectedRows($("#Id").val(), gridCheckboxHandler2.selectedIds, "@Url.Action("DeleteSelectedVendors", "RequestForQuotation")", "vendors-grid", "", true);
+        });
+    });
+</script>

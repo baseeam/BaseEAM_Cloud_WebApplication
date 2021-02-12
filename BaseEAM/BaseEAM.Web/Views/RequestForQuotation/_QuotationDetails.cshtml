@@ -1,0 +1,189 @@
+﻿@using BaseEAM.Services.Security
+@model RequestForQuotationVendorModel
+@{
+    var permissionService = EngineContext.Current.Resolve<BaseEAM.Services.IPermissionService>();
+    var allowCreate = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Create);
+    var allowRead = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Read);
+    var allowUpdate = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Update);
+    var allowDelete = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Delete);
+
+    var primarySystemCurrencySymbol = EngineContext.Current.Resolve<BaseEAM.Core.IWorkContext>().WorkingCurrency.CurrencySymbol;
+}
+
+<div id="panel-quotation" class="panel panel-default eam-panel">
+    <div class="panel-heading">
+        <button type="button" id="saveQuotationDetail" class="btn btn-primary@(allowCreate || allowUpdate ? "" : " none-display")" title="@T("Common.Save")">
+            <i class="fa fa-floppy-o"></i>
+        </button>
+        <button type="button" id="cancelQuotationDetail" class="btn btn-primary" title="@T("Common.Cancel")">
+            <i class="fa fa-ban"></i>
+        </button>
+        <button type="button" id="createPO" class="btn btn-primary@(allowCreate || allowUpdate ? "" : " none-display")" title="@T("RequestForQuotation.CreatePO")">
+            @T("RequestForQuotation.CreatePO")
+        </button>
+    </div>
+    <div class="panel-body">
+        @Html.Hidden("RequestForQuotationId", Model.RequestForQuotationId)
+        @Html.Hidden("RequestForQuotationVendorId", Model.Id)
+        @Html.Hidden("VendorId", Model.VendorId)
+        <div id="quotation-error" class="validation-summary-errors none-display">
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.VendorName, required: true)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamDisplayFor(model => model.VendorName)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.VendorContactName, required: true)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.VendorContactName)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.VendorContactEmail, required: true)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.VendorContactEmail)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.VendorContactPhone, required: true)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.VendorContactPhone)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.VendorContactFax)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.VendorContactFax)
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.VendorQuoteNumber)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.VendorQuoteNumber)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.BaseEamLabelFor(model => model.VendorQuoteDate)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.BaseEamEditorFor(model => model.VendorQuoteDate)
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr />
+        <h4>@T("RequestForQuotation.QuotationDetails")</h4>
+        @Html.Partial("_QuotationItems", new RequestForQuotationVendorItemModel { RequestForQuotationVendorId = Model.Id })
+    </div>
+    <script type="text/javascript">
+
+        $("#saveQuotationDetail").click(function (e) {
+            e.preventDefault();
+            var $group = $("#panel-quotation :input");
+            var postData = $group.serializeJSON({ checkboxUncheckedValue: "false" });
+            //change Id property name so it can map to MVC model
+            postData.Id = postData.RequestForQuotationVendorId;
+            addAntiForgeryToken(postData);
+
+            $.ajax({
+                cache: false,
+                type: "POST",
+                url: "@(Url.Action("SaveQuotation", "RequestForQuotation"))",
+                data: postData,
+                success: function (data) {
+                    if (data && data.Errors) {
+                        showErrors(data.Errors, '#quotation-error');
+                    } else {
+                        //then toggle the panel
+                        togglePanelQuotation(false);
+
+                        //refresh grid
+                        var grid = $('#quotations-grid').data('kendoGrid');
+                        grid.dataSource.page(1);
+                    }
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    showBSModal({ title: 'ERROR', body: thrownError });
+                },
+                traditional: true
+            });
+        });
+
+        $("#cancelQuotationDetail").click(function (e) {
+            e.preventDefault();
+            var postData = {
+                id: $("#RequestForQuotationVendorId").val()
+            };
+            addAntiForgeryToken(postData);
+
+            $.ajax({
+                cache: false,
+                type: "POST",
+                url: "@(Url.Action("CancelQuotation", "RequestForQuotation"))",
+                data: postData,
+                success: function (data) {
+                    //toggle the panel
+                    togglePanelQuotation(false);
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    showBSModal({ title: 'ERROR', body: thrownError });
+                },
+                traditional: true
+            });
+        });
+
+        $("#createPO").click(function (e) {
+            e.preventDefault();
+            $.when(kendo.ui.ExtOkCancelDialog.show({
+                title: "Warning!",
+                message: '@T("Common.AreYouSure")',
+                icon: 'k-ext-warning'
+            }))
+                .done(function (response) {
+                    if (response.button == "OK") {
+                        var postData = {
+                            requestForQuotationVendorId: $("#RequestForQuotationVendorId").val()
+                        };
+                        addAntiForgeryToken(postData);
+                        $.ajax({
+                            cache: false,
+                            type: "POST",
+                            url: "@(Url.Action("CreatePO", "RequestForQuotation"))",
+                            data: postData,
+                            success: function (data) {
+                                if (data && data.Errors) {
+                                    showBSModal({ title: 'ERROR', body: data.Errors });
+                                } else {
+
+                                }
+                            },
+                            error: function (xhr, ajaxOptions, thrownError) {
+                                showBSModal({ title: 'ERROR', body: thrownError });
+                            },
+                            traditional: true
+                        });
+                    }
+                });
+        });
+
+    </script>
+</div>

@@ -1,0 +1,152 @@
+﻿@using BaseEAM.Services.Security
+@model RequestForQuotationVendorModel
+@{
+    var defaultGridPageSize = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().DefaultGridPageSize;
+    var gridPageSizes = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().GridPageSizes;
+
+    var permissionService = EngineContext.Current.Resolve<BaseEAM.Services.IPermissionService>();
+    var allowCreate = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Create);
+    var allowRead = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Read);
+    var allowUpdate = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Update);
+    var allowDelete = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Delete);
+}
+<div id="group-quotations" class="panel-group">
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <div id="quotations-grid"></div>
+            <script>
+                var gridCheckboxHandler3 = new BaseEam.CheckBoxHandler('quotations-grid');
+                gridCheckboxHandler3.init();
+
+                $(document).ready(function () {
+                    $("#quotations-grid").kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("VendorList", "RequestForQuotation"))",
+                                    type: "POST",
+                                    dataType: "json",
+                                    data: additionalData3
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: "Id"
+                                }
+                            },
+                            error: function(e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)],
+                            @Html.Partial("_GridPagerMessages")
+                        },
+                        sortable: true,
+                        editable: false,
+                        scrollable: false,
+                        dataBound: gridCheckboxHandler3.onDataBound,
+                        columns: [{
+                            field: "Id",
+                            headerTemplate: "<input id='quotations-grid-mastercheckbox' type='checkbox'/>",
+                            headerAttributes: { style: "text-align:center" },
+                            attributes: { style: "text-align:center" },
+                            template: "<input type='checkbox' value='#=Id#' class='checkboxGroups'/>",
+                            width: 50,
+                            sortable: false
+                        },{
+                            field: "VendorName",
+                            title: "@T("Vendor")"
+                        }, {
+                            field: "VendorContactName",
+                            title: "@T("Contact.Name")"
+                        }, {
+                            field: "VendorContactEmail",
+                            title: "@T("Contact.Email")"
+                        }, {
+                            field: "VendorContactPhone",
+                            title: "@T("Contact.Phone")"
+                        }, {
+                            field: "VendorContactFax",
+                            title: "@T("Contact.Fax")"
+                        }, {
+                            field: "Id",
+                            headerTemplate: "",
+                            width: 50,
+                            template: '<button type="button" class="btn btn-primary@(allowRead || allowUpdate ? "" : " none-display")" href="" onclick="editQuotation(event, #=Id#);"></span><i class="fa fa-pencil aria-hidden="true""></i></a>',
+                            sortable: false
+                        }]
+                    });
+                });
+            </script>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+
+    function editQuotation(e, id){
+        e.preventDefault();
+        //check if panel-quotation is open => close it before edit
+        if($('#panel-quotation').is(":visible")){
+            togglePanelQuotation(false);
+        }
+
+        var postData = {
+            id : id
+        };
+        addAntiForgeryToken(postData);
+
+        $.ajax({
+            cache: false,
+            type: "POST",
+            url: "@(Url.Action("Quotation", "RequestForQuotation"))",
+            data: postData,
+            success: function(data) {
+                //append html
+                $("#group-quotations").append(data.Html);
+
+                //then toggle the panel
+                togglePanelQuotation(true);
+            },
+            error: function(xhr, ajaxOptions, thrownError) {
+                showBSModal({title: 'ERROR', body: thrownError});
+            },
+            traditional: true
+        });
+    };
+
+    function additionalData3() {
+        var data = {
+            requestForQuotationId: $("#Id").val()
+        };
+        addAntiForgeryToken(data);
+        return data;
+    }
+
+    function togglePanelQuotation(editmode) {
+        if (editmode) {
+            $('#panel-quotation').show();
+        }
+        else {
+            ////remove the panel html so we won't care
+            //about dirty change tracking for newly added input tag
+            $('#panel-quotation').remove();
+        }
+    }
+
+    $(document).ready(function () {
+
+    });
+</script>

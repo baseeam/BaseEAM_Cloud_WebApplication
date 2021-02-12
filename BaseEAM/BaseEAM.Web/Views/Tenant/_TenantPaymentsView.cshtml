@@ -1,0 +1,820 @@
+﻿@using BaseEAM.Services.Security
+@model TenantPaymentModel
+@{
+    var defaultGridPageSize = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().DefaultGridPageSize;
+    var gridPageSizes = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().GridPageSizes;
+    var primarySystemCurrencySymbol = EngineContext.Current.Resolve<BaseEAM.Core.IWorkContext>().WorkingCurrency.CurrencySymbol;
+
+    var permissionService = EngineContext.Current.Resolve<BaseEAM.Services.IPermissionService>();
+    var allowCreate = permissionService.Authorize(StandardPermissionName.Property_Tenant_Create);
+    var allowRead = permissionService.Authorize(StandardPermissionName.Property_Tenant_Read);
+    var allowUpdate = permissionService.Authorize(StandardPermissionName.Property_Tenant_Update);
+    var allowDelete = permissionService.Authorize(StandardPermissionName.Property_Tenant_Delete);
+}
+<div id="group-tenantPayments" class="panel-group">
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <div class="row">
+                <h4>@T("Tenant.RentPayments")</h4>
+                <div id="rentPayments-grid"></div>
+                <script>
+                var gridCheckboxHandlerForRent = new BaseEam.CheckBoxHandler('rentPayments-grid');
+                    gridCheckboxHandlerForRent.init();
+
+                $(document).ready(function () {
+                    $("#rentPayments-grid").kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("RentPaymentList", "Tenant"))",
+                                    type: "POST",
+                                    dataType: "json",
+                                    data: additionalDataForRent
+                                },
+                                //This is used to map field to format that the server can understand
+                                //it runs after the data (additionalData) populated
+                                parameterMap: function (data, operation) {
+                                    sortMapping = [
+                                        { from: "ChargeTypeName", to: "ChargeType.Name" },
+                                    ];
+                                    BaseEam.Grid.mapSortColumns(data.sort, sortMapping);
+                                    return data;
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: "Id"
+                                }
+                            },
+                            error: function(e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)],
+                            @Html.Partial("_GridPagerMessages")
+                        },
+                        sortable: true,
+                        detailInit: rentPaymentCollectionDetailInit,
+                        editable: false,
+                        scrollable: false,
+                        dataBound: gridCheckboxHandlerForRent.onDataBound,
+                        columns: [{
+                                    field: "DueDate",
+                                    title: "@T("TenantPayment.DueDate")",
+                                    template: '#= DueDate != null ? kendo.toString(kendo.parseDate(DueDate, "MM/dd/yyyy"), "MM/dd/yyyy") : "" #'
+                                },{
+                                    field: "ChargeTypeName",
+                                    title: "@T("ChargeType")",
+                                    width: 150
+                                },{
+                                    field: "DueAmount",
+                                    title: "@T("TenantPayment.DueAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= DueAmount != null ? kendo.toString(DueAmount, "n") : "" #'
+                                },{
+                                    field: "DaysLateCount",
+                                    title: "@T("TenantPayment.DaysLateCount")",
+                                },{
+                                    field: "LateFeeAmount",
+                                    title: "@T("TenantPayment.LateFeeAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= LateFeeAmount != null ? kendo.toString(LateFeeAmount, "n") : "" #'
+                                },{
+                                    field: "CollectedAmount",
+                                    title: "@T("TenantPayment.CollectedAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= CollectedAmount != null ? kendo.toString(CollectedAmount, "n") : "" #'
+                                },{
+                                    field: "BalanceAmount",
+                                    title: "@T("TenantPayment.BalanceAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= BalanceAmount != null ? kendo.toString(BalanceAmount, "n") : "" #'
+                                }]
+                    });
+                });
+
+                function rentPaymentCollectionDetailInit(e) {
+                    $("<div id='rentPaymentCollectionsId-grid' />").appendTo(e.detailCell).kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("TenantPaymentCollections", "TenantPayment"))",
+                                    type: "POST",
+                                    dataType: "json",
+                                    data: additionalDataForRentPaymentCollection(e)
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: 'Id',
+                                    fields: {
+                                        IsNew: { hidden: true, editable: false, defaultValue: true },
+                                        Id: { hidden: true, editable: false, defaultValue: 0 },
+                                    }
+                                }
+                            },
+                            error: function (e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)],
+                                    @Html.Partial("_GridPagerMessages")
+                        },
+                        sortable: true,
+                        editable: false,
+                        scrollable: false,
+                        columns: [{
+                            field: "ReceivedAmount",
+                            title: "@T("TenantPaymentCollection.ReceivedAmount") [@(primarySystemCurrencySymbol)]",
+                            template: '#= ReceivedAmount != null ? kendo.toString(ReceivedAmount, "n") : "" #'
+                        }, {
+                            field: "ReceivedDate",
+                            title: "@T("TenantPaymentCollection.ReceivedDate")",
+                            template: '#= ReceivedDate != null ? kendo.toString(kendo.parseDate(ReceivedDate, "MM/dd/yyyy"), "MM/dd/yyyy") : "" #'
+                        }, {
+                            field: "CheckNum",
+                            title: "@T("TenantPaymentCollection.CheckNum")",
+                            width: 150
+                        }, {
+                            field: "PaymentMethodName",
+                            title: "@T("TenantPaymentCollection.PaymentMethod")",
+                            sortable: false
+                        }]
+                    });
+                }
+                function additionalDataForRent() {
+                    var data = {
+                        tenantId: $("#Id").val()
+                    };
+                    addAntiForgeryToken(data);
+                    return data;
+                }
+
+                function additionalDataForRentPaymentCollection(e) {
+                    var data = {
+                        tenantPaymentId: e.data.Id,
+                    }
+                    addAntiForgeryToken(data);
+                    return data;
+                }
+                </script>
+            </div>
+            <div class="row">
+                <h4>@T("Tenant.RecurringCharges")</h4>
+                <div id="recurringChargePayments-grid"></div>
+                <script>
+                var gridCheckboxHandlerForRecurringCharge = new BaseEam.CheckBoxHandler('recurringChargePayments-grid');
+                gridCheckboxHandlerForRecurringCharge.init();
+
+                $(document).ready(function () {
+                    $("#recurringChargePayments-grid").kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("ChargePaymentList", "Tenant"))",
+                                    type: "POST",
+                                    dataType: "json",
+                                    data: additionalDataForRecurringCharge
+                                },
+                                //This is used to map field to format that the server can understand
+                                //it runs after the data (additionalData) populated
+                                parameterMap: function (data, operation) {
+                                    sortMapping = [
+                                        { from: "ChargeTypeName", to: "ChargeType.Name" },
+                                    ];
+                                    BaseEam.Grid.mapSortColumns(data.sort, sortMapping);
+                                    return data;
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: "Id"
+                                }
+                            },
+                            error: function(e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)],
+                            @Html.Partial("_GridPagerMessages")
+                        },
+                        sortable: true,
+                        detailInit: recurringChargePaymentCollectionDetailInit,
+                        editable: false,
+                        scrollable: false,
+                        dataBound: gridCheckboxHandlerForRecurringCharge.onDataBound,
+                        columns: [{
+                                    field: "DueDate",
+                                    title: "@T("TenantPayment.DueDate")",
+                                    template: '#= DueDate != null ? kendo.toString(kendo.parseDate(DueDate, "MM/dd/yyyy"), "MM/dd/yyyy") : "" #'
+                                },{
+                                    field: "ChargeTypeName",
+                                    title: "@T("ChargeType")",
+                                    width: 150
+                                },{
+                                    field: "DueAmount",
+                                    title: "@T("TenantPayment.DueAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= DueAmount != null ? kendo.toString(DueAmount, "n") : "" #'
+                                },{
+                                    field: "CollectedAmount",
+                                    title: "@T("TenantPayment.CollectedAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= CollectedAmount != null ? kendo.toString(CollectedAmount, "n") : "" #'
+                                },{
+                                    field: "BalanceAmount",
+                                    title: "@T("TenantPayment.BalanceAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= BalanceAmount != null ? kendo.toString(BalanceAmount, "n") : "" #'
+                                }]
+                    });
+                });
+
+                function recurringChargePaymentCollectionDetailInit(e) {
+                    $("<div id='tenantPaymentCollectionsId-grid' />").appendTo(e.detailCell).kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("TenantPaymentCollections", "TenantPayment"))",
+                                    type: "POST",
+                                    dataType: "json",
+                                    data: additionalDataForRecurringChargePaymentCollection(e)
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: 'Id',
+                                    fields: {
+                                        IsNew: { hidden: true, editable: false, defaultValue: true },
+                                        Id: { hidden: true, editable: false, defaultValue: 0 },
+                                    }
+                                }
+                            },
+                            error: function (e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)],
+                                    @Html.Partial("_GridPagerMessages")
+                        },
+                        sortable: true,
+                        editable: false,
+                        scrollable: false,
+                        columns: [{
+                            field: "ReceivedAmount",
+                            title: "@T("TenantPaymentCollection.ReceivedAmount") [@(primarySystemCurrencySymbol)]",
+                            template: '#= ReceivedAmount != null ? kendo.toString(ReceivedAmount, "n") : "" #'
+                        }, {
+                            field: "ReceivedDate",
+                            title: "@T("TenantPaymentCollection.ReceivedDate")",
+                            template: '#= ReceivedDate != null ? kendo.toString(kendo.parseDate(ReceivedDate, "MM/dd/yyyy"), "MM/dd/yyyy") : "" #'
+                        }, {
+                            field: "CheckNum",
+                            title: "@T("TenantPaymentCollection.CheckNum")",
+                            width: 150
+                        }, {
+                            field: "PaymentMethodName",
+                            title: "@T("TenantPaymentCollection.PaymentMethod")",
+                            sortable: false
+                        }]
+                    });
+                }
+                function additionalDataForRecurringCharge() {
+                    var data = {
+                        tenantId: $("#Id").val(),
+                        chargeDueType: 0 //0: EachTimeRentIsDue
+                    };
+                    addAntiForgeryToken(data);
+                    return data;
+                }
+
+                function additionalDataForRecurringChargePaymentCollection(e) {
+                    var data = {
+                        tenantPaymentId: e.data.Id,
+                    }
+                    addAntiForgeryToken(data);
+                    return data;
+                }
+                </script>
+            </div>
+            <div class="row">
+                <h4>@T("Tenant.FixedCharges")</h4>
+                <div id="fixedChargePayments-grid"></div>
+                <script>
+                var gridCheckboxHandlerForFixedCharge = new BaseEam.CheckBoxHandler('fixedChargePayments-grid');
+                gridCheckboxHandlerForFixedCharge.init();
+
+                $(document).ready(function () {
+                    $("#fixedChargePayments-grid").kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("ChargePaymentList", "Tenant"))",
+                                    type: "POST",
+                                    dataType: "json",
+                                    data: additionalDataForFixedCharge
+                                },
+                                //This is used to map field to format that the server can understand
+                                //it runs after the data (additionalData) populated
+                                parameterMap: function (data, operation) {
+                                    sortMapping = [
+                                        { from: "ChargeTypeName", to: "ChargeType.Name" },
+                                    ];
+                                    BaseEam.Grid.mapSortColumns(data.sort, sortMapping);
+                                    return data;
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: "Id"
+                                }
+                            },
+                            error: function(e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)],
+                            @Html.Partial("_GridPagerMessages")
+                        },
+                        sortable: true,
+                        detailInit: fixedChargePaymentCollectionDetailInit,
+                        editable: false,
+                        scrollable: false,
+                        dataBound: gridCheckboxHandlerForFixedCharge.onDataBound,
+                        columns: [{
+                                    field: "DueDate",
+                                    title: "@T("TenantPayment.DueDate")",
+                                    template: '#= DueDate != null ? kendo.toString(kendo.parseDate(DueDate, "MM/dd/yyyy"), "MM/dd/yyyy") : "" #'
+                                },{
+                                    field: "ChargeTypeName",
+                                    title: "@T("ChargeType")",
+                                    width: 150
+                                },{
+                                    field: "DueAmount",
+                                    title: "@T("TenantPayment.DueAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= DueAmount != null ? kendo.toString(DueAmount, "n") : "" #'
+                                },{
+                                    field: "CollectedAmount",
+                                    title: "@T("TenantPayment.CollectedAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= CollectedAmount != null ? kendo.toString(CollectedAmount, "n") : "" #'
+                                },{
+                                    field: "BalanceAmount",
+                                    title: "@T("TenantPayment.BalanceAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= BalanceAmount != null ? kendo.toString(BalanceAmount, "n") : "" #'
+                                }]
+                    });
+                });
+
+                function fixedChargePaymentCollectionDetailInit(e) {
+                    $("<div id='tenantPaymentCollectionsId-grid' />").appendTo(e.detailCell).kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("TenantPaymentCollections", "TenantPayment"))",
+                                    type: "POST",
+                                    dataType: "json",
+                                    data: additionalDataForFixedChargePaymentCollection(e)
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: 'Id',
+                                    fields: {
+                                        IsNew: { hidden: true, editable: false, defaultValue: true },
+                                        Id: { hidden: true, editable: false, defaultValue: 0 },
+                                    }
+                                }
+                            },
+                            error: function (e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)],
+                                    @Html.Partial("_GridPagerMessages")
+                        },
+                        sortable: true,
+                        editable: false,
+                        scrollable: false,
+                        columns: [{
+                            field: "ReceivedAmount",
+                            title: "@T("TenantPaymentCollection.ReceivedAmount") [@(primarySystemCurrencySymbol)]",
+                            template: '#= ReceivedAmount != null ? kendo.toString(ReceivedAmount, "n") : "" #'
+                        }, {
+                            field: "ReceivedDate",
+                            title: "@T("TenantPaymentCollection.ReceivedDate")",
+                            template: '#= ReceivedDate != null ? kendo.toString(kendo.parseDate(ReceivedDate, "MM/dd/yyyy"), "MM/dd/yyyy") : "" #'
+                        }, {
+                            field: "CheckNum",
+                            title: "@T("TenantPaymentCollection.CheckNum")",
+                            width: 150
+                        }, {
+                            field: "PaymentMethodName",
+                            title: "@T("TenantPaymentCollection.PaymentMethod")",
+                            sortable: false
+                        }]
+                    });
+                }
+                function additionalDataForFixedCharge() {
+                    var data = {
+                        tenantId: $("#Id").val(),
+                        chargeDueType: 1 //1: OnceOnlyWhenTheLeaseStarts or 2: OnceOnlyWhenTheLeaseEnds
+                    };
+                    addAntiForgeryToken(data);
+                    return data;
+                }
+
+                function additionalDataForFixedChargePaymentCollection(e) {
+                    var data = {
+                        tenantPaymentId: e.data.Id,
+                    }
+                    addAntiForgeryToken(data);
+                    return data;
+                }
+                </script>
+            </div>
+            <div class="row">
+                <h4>@T("Tenant.ManualDateCharges")</h4>
+                <div id="manualDateChargePayments-grid"></div>
+                <script>
+                var gridCheckboxHandlerForManualDateCharge = new BaseEam.CheckBoxHandler('manualDateChargePayments-grid');
+                gridCheckboxHandlerForManualDateCharge.init();
+
+                $(document).ready(function () {
+                    $("#manualDateChargePayments-grid").kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("ChargePaymentList", "Tenant"))",
+                                    type: "POST",
+                                    dataType: "json",
+                                    data: additionalDataForManualDateCharge
+                                },
+                                //This is used to map field to format that the server can understand
+                                //it runs after the data (additionalData) populated
+                                parameterMap: function (data, operation) {
+                                    sortMapping = [
+                                        { from: "ChargeTypeName", to: "ChargeType.Name" },
+                                    ];
+                                    BaseEam.Grid.mapSortColumns(data.sort, sortMapping);
+                                    return data;
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: "Id"
+                                }
+                            },
+                            error: function(e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)],
+                            @Html.Partial("_GridPagerMessages")
+                        },
+                        sortable: true,
+                        detailInit: manualDateChargePaymentCollectionDetailInit,
+                        editable: false,
+                        scrollable: false,
+                        dataBound: gridCheckboxHandlerForManualDateCharge.onDataBound,
+                        columns: [{
+                                    field: "DueDate",
+                                    title: "@T("TenantPayment.DueDate")",
+                                    template: '#= DueDate != null ? kendo.toString(kendo.parseDate(DueDate, "MM/dd/yyyy"), "MM/dd/yyyy") : "" #'
+                                },{
+                                    field: "ChargeTypeName",
+                                    title: "@T("ChargeType")",
+                                    width: 150
+                                },{
+                                    field: "DueAmount",
+                                    title: "@T("TenantPayment.DueAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= DueAmount != null ? kendo.toString(DueAmount, "n") : "" #'
+                                },{
+                                    field: "CollectedAmount",
+                                    title: "@T("TenantPayment.CollectedAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= CollectedAmount != null ? kendo.toString(CollectedAmount, "n") : "" #'
+                                },{
+                                    field: "BalanceAmount",
+                                    title: "@T("TenantPayment.BalanceAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= BalanceAmount != null ? kendo.toString(BalanceAmount, "n") : "" #'
+                                }]
+                    });
+                });
+
+                function manualDateChargePaymentCollectionDetailInit(e) {
+                    $("<div id='tenantPaymentCollectionsId-grid' />").appendTo(e.detailCell).kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("TenantPaymentCollections", "TenantPayment"))",
+                                    type: "POST",
+                                    dataType: "json",
+                                    data: additionalDataForManualDateChargePaymentCollection(e)
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: 'Id',
+                                    fields: {
+                                        IsNew: { hidden: true, editable: false, defaultValue: true },
+                                        Id: { hidden: true, editable: false, defaultValue: 0 },
+                                    }
+                                }
+                            },
+                            error: function (e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)],
+                                    @Html.Partial("_GridPagerMessages")
+                        },
+                        sortable: true,
+                        editable: false,
+                        scrollable: false,
+                        columns: [{
+                            field: "ReceivedAmount",
+                            title: "@T("TenantPaymentCollection.ReceivedAmount") [@(primarySystemCurrencySymbol)]",
+                            template: '#= ReceivedAmount != null ? kendo.toString(ReceivedAmount, "n") : "" #'
+                        }, {
+                            field: "ReceivedDate",
+                            title: "@T("TenantPaymentCollection.ReceivedDate")",
+                            template: '#= ReceivedDate != null ? kendo.toString(kendo.parseDate(ReceivedDate, "MM/dd/yyyy"), "MM/dd/yyyy") : "" #'
+                        }, {
+                            field: "CheckNum",
+                            title: "@T("TenantPaymentCollection.CheckNum")",
+                            width: 150
+                        }, {
+                            field: "PaymentMethodName",
+                            title: "@T("TenantPaymentCollection.PaymentMethod")",
+                            sortable: false
+                        }]
+                    });
+                }
+                function additionalDataForManualDateCharge() {
+                    var data = {
+                        tenantId: $("#Id").val(),
+                        chargeDueType: 3 //3: OnceOnlyOnaSpecificDate
+                    };
+                    addAntiForgeryToken(data);
+                    return data;
+                }
+
+                function additionalDataForManualDateChargePaymentCollection(e) {
+                    var data = {
+                        tenantPaymentId: e.data.Id,
+                    }
+                    addAntiForgeryToken(data);
+                    return data;
+                }
+                </script>
+            </div>
+            <div class="row">
+                <h4>@T("Tenant.OtherMonthlyCharges")</h4>
+                <div id="otherMonthlyChargePayments-grid"></div>
+                <script>
+                var gridCheckboxHandlerForOtherMonthlyCharge = new BaseEam.CheckBoxHandler('otherMonthlyChargePayments-grid');
+                gridCheckboxHandlerForOtherMonthlyCharge.init();
+
+                $(document).ready(function () {
+                    $("#otherMonthlyChargePayments-grid").kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("ChargePaymentList", "Tenant"))",
+                                    type: "POST",
+                                    dataType: "json",
+                                    data: additionalDataForOtherMonthlyCharge
+                                },
+                                //This is used to map field to format that the server can understand
+                                //it runs after the data (additionalData) populated
+                                parameterMap: function (data, operation) {
+                                    sortMapping = [
+                                        { from: "ChargeTypeName", to: "ChargeType.Name" },
+                                    ];
+                                    BaseEam.Grid.mapSortColumns(data.sort, sortMapping);
+                                    return data;
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: "Id"
+                                }
+                            },
+                            error: function(e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)],
+                            @Html.Partial("_GridPagerMessages")
+                        },
+                        sortable: true,
+                        detailInit: otherMonthlyChargePaymentCollectionDetailInit,
+                        editable: false,
+                        scrollable: false,
+                        dataBound: gridCheckboxHandlerForOtherMonthlyCharge.onDataBound,
+                        columns: [{
+                                    field: "DueDate",
+                                    title: "@T("TenantPayment.DueDate")",
+                                    template: '#= DueDate != null ? kendo.toString(kendo.parseDate(DueDate, "MM/dd/yyyy"), "MM/dd/yyyy") : "" #'
+                                },{
+                                    field: "ChargeTypeName",
+                                    title: "@T("ChargeType")",
+                                    width: 150
+                                },{
+                                    field: "DueAmount",
+                                    title: "@T("TenantPayment.DueAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= DueAmount != null ? kendo.toString(DueAmount, "n") : "" #'
+                                },{
+                                    field: "CollectedAmount",
+                                    title: "@T("TenantPayment.CollectedAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= CollectedAmount != null ? kendo.toString(CollectedAmount, "n") : "" #'
+                                },{
+                                    field: "BalanceAmount",
+                                    title: "@T("TenantPayment.BalanceAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= BalanceAmount != null ? kendo.toString(BalanceAmount, "n") : "" #'
+                                }]
+                    });
+                });
+
+                function otherMonthlyChargePaymentCollectionDetailInit(e) {
+                    $("<div id='tenantPaymentCollectionsId-grid' />").appendTo(e.detailCell).kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("TenantPaymentCollections", "TenantPayment"))",
+                                    type: "POST",
+                                    dataType: "json",
+                                    data: additionalDataForOtherMonthlyChargePaymentCollection(e)
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: 'Id',
+                                    fields: {
+                                        IsNew: { hidden: true, editable: false, defaultValue: true },
+                                        Id: { hidden: true, editable: false, defaultValue: 0 },
+                                    }
+                                }
+                            },
+                            error: function (e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)],
+                                    @Html.Partial("_GridPagerMessages")
+                        },
+                        sortable: true,
+                        editable: false,
+                        scrollable: false,
+                        columns: [{
+                            field: "ReceivedAmount",
+                            title: "@T("TenantPaymentCollection.ReceivedAmount") [@(primarySystemCurrencySymbol)]",
+                            template: '#= ReceivedAmount != null ? kendo.toString(ReceivedAmount, "n") : "" #'
+                        }, {
+                            field: "ReceivedDate",
+                            title: "@T("TenantPaymentCollection.ReceivedDate")",
+                            template: '#= ReceivedDate != null ? kendo.toString(kendo.parseDate(ReceivedDate, "MM/dd/yyyy"), "MM/dd/yyyy") : "" #'
+                        }, {
+                            field: "CheckNum",
+                            title: "@T("TenantPaymentCollection.CheckNum")",
+                            width: 150
+                        }, {
+                            field: "PaymentMethodName",
+                            title: "@T("TenantPaymentCollection.PaymentMethod")",
+                            sortable: false
+                        }]
+                    });
+                }
+                function additionalDataForOtherMonthlyCharge() {
+                    var data = {
+                        tenantId: $("#Id").val(),
+                        chargeDueType: 4 //4: MonthlyOnaSpecificDay
+                    };
+                    addAntiForgeryToken(data);
+                    return data;
+                }
+
+                function additionalDataForOtherMonthlyChargePaymentCollection(e) {
+                    var data = {
+                        tenantPaymentId: e.data.Id,
+                    }
+                    addAntiForgeryToken(data);
+                    return data;
+                }
+                </script>
+            </div>
+        </div>
+    </div>
+</div>

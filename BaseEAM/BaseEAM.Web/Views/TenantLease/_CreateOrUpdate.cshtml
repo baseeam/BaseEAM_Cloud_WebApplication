@@ -1,0 +1,199 @@
+﻿@model TenantLeaseModel
+@Html.HiddenFor(model => model.Id)
+@Html.HiddenFor(model => model.IsNew)
+@Html.HiddenFor(model => model.Status)
+@Html.HiddenFor(model => model.AvailableActions)
+
+<script>
+    $(document).ready(function () {
+        bindBootstrapTabSelectEvent('tenantLease-edit');
+    });
+
+    function savedCallback(data) {
+        viewModel.isNew(false);
+        viewModel.number(data.number);
+        //refresh grid
+        var grid = $('#tenantLeasePaymentSchedules-grid').data('kendoGrid');
+        grid.dataSource.page(1);
+    }
+</script>
+
+<div class="content">
+    <div class="form-horizontal">
+        <div id="tenantLease-edit" class="nav-tabs-custom">
+            <ul class="nav nav-tabs">
+                @Html.RenderBootstrapTabHeader("tab-info", @T("TenantLease.Info"), true)
+                @Html.RenderBootstrapTabHeader("tab-rentaltermsanddates", @T("TenantLease.RentalTermAndDate"))
+                @Html.RenderBootstrapTabHeader("tab-charges", @T("Common.Charges"))
+                @Html.RenderBootstrapTabHeader("tab-lateFees", @T("TenantLease.LateFees"))
+                @Html.RenderBootstrapTabHeader("tab-assignmentHistories", @T("AssignmentHistories"))
+                @Html.RenderBootstrapTabHeader("tab-attachments", @T("Common.Attachments"))
+                @Html.RenderBootstrapTabHeader("tab-comments", @T("Common.Comments"))
+            </ul>
+            <div class="tab-content">
+                @Html.RenderBootstrapTabContent("tab-info", @TabInfo(), true)
+                @Html.RenderBootstrapTabContent("tab-rentaltermsanddates", @TabRentalTermsAndDates(), dataBind: "visible: !isNew()")
+                @Html.RenderBootstrapTabContent("tab-charges", @TabCharges(), dataBind: "visible: !isNew()")
+                @Html.RenderBootstrapTabContent("tab-lateFees", @TabLateFees(), dataBind: "visible: !isNew()")
+                @Html.RenderBootstrapTabContent("tab-assignmentHistories", @TabAssignmentHistories(), dataBind: "visible: !isNew()")
+                @Html.RenderBootstrapTabContent("tab-attachments", @TabAttachments(), dataBind: "visible: !isNew()")
+                @Html.RenderBootstrapTabContent("tab-comments", @TabComments(), dataBind: "visible: !isNew()")
+            </div>
+        </div>
+    </div>
+</div>
+
+@{
+    //custom tabs
+    var eventMessage = new AdminTabStripCreated(this.Html, "tenantLease-edit");
+    EngineContext.Current.Resolve<IEventPublisher>().Publish(eventMessage);
+    foreach (var eventBlock in eventMessage.BlocksToRender)
+    {
+        @eventBlock
+    }
+}
+
+@helper TabInfo()
+{
+    <div class="panel-group">
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.Number, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                <div class="form-text-row" data-bind="html: number">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.Description)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamEditorFor(model => model.Description)
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.Priority, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.EnumDropDownListFor(model => model.Priority, new { @class = "form-control" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.Status, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                <div class="form-text-row" data-bind="html: status">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.AssignedUsers, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                <div class="form-text-row" id="assignedUsers" data-bind="html: assignedUsers"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr />
+                <h4>@T("TenantLease.TenantAndProperty")</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.SiteId, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamComboBoxFor(model => model.SiteId, "SiteList", "Site", null, true)
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.PropertyId, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamComboBoxFor(model => model.PropertyId, "PropertyList", "Site",
+                                            new RouteValueDictionary { { "parentFieldName", "SiteId" } }, true)
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.TenantId, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamComboBoxFor(model => model.TenantId, "GetChoices", "Common",
+                                        new RouteValueDictionary { { "dbTable", "Tenant" }, { "dbTextColumn", "Name" }, { "dbValueColumn", "Id" } }, true)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr />
+                @if (Model.Id > 0 && Model.IsNew == false)
+                {
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <div class="col-md-3">
+                                    @Html.BaseEamLabelFor(model => model.FirstCreatedBy)
+                                </div>
+                                <div class="col-md-9">
+                                    @Html.BaseEamDisplayFor(model => model.FirstCreatedBy)
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-md-3">
+                                    @Html.BaseEamLabelFor(model => model.LastUpdatedBy)
+                                </div>
+                                <div class="col-md-9">
+                                    @Html.BaseEamDisplayFor(model => model.LastUpdatedBy)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    
+}
+
+@helper TabRentalTermsAndDates()
+{
+    @Html.Partial("_RentalTermsAndDates", Model)
+}
+
+@helper TabCharges()
+{
+    @Html.Partial("_Charges", new TenantLeaseChargeModel { TenantLeaseId = Model.Id })
+}
+
+@helper TabLateFees()
+{
+    @Html.Partial("_LateFees", Model)
+}
+
+@helper TabAssignmentHistories()
+{
+    @Html.Partial("AssignmentHistory", new AssignmentHistoryModel { EntityId = Model.Id, EntityType = EntityType.TenantLease })
+}
+
+@helper TabAttachments()
+{
+    @Html.Partial("Attachment", new AttachmentModel { EntityId = Model.Id, EntityType = EntityType.TenantLease })
+}
+
+@helper TabComments()
+{
+    @Html.Partial("Comment", new CommentModel { EntityId = Model.Id, EntityType = EntityType.TenantLease })
+}

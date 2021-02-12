@@ -1,0 +1,274 @@
+﻿@model PurchaseOrderModel
+
+<div class="panel-group">
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <h4>@T("PurchaseOrder.ShipTo")</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.ShipToAddressId)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamComboBoxFor(model => model.ShipToAddressId, "GetChoices", "Common",
+                                            new RouteValueDictionary { { "dbTable", "Address" }, { "dbTextColumn", "Name" }, { "dbValueColumn", "Id" } }, true, aysIgnore: true)
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.ShipToAddressName, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.ShipToAddressName)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.ShipToAddressCountry, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.ShipToAddressCountry)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.ShipToAddressStateProvince)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.ShipToAddressStateProvince)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.ShipToAddressCity, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.ShipToAddressCity)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.ShipToAddressAddress1, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.ShipToAddressAddress1)
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.ShipToAddressAddress2)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.ShipToAddressAddress2)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.ShipToAddressZipPostalCode, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.ShipToAddressZipPostalCode)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.ShipToAddressPhoneNumber, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.ShipToAddressPhoneNumber)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.ShipToAddressFaxNumber)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.ShipToAddressFaxNumber)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.ShipToAddressEmail, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.ShipToAddressEmail)
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <h4>@T("PurchaseOrder.BillTo")</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.BillToAddressId)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamComboBoxFor(model => model.BillToAddressId, "GetChoices", "Common",
+                                            new RouteValueDictionary { { "dbTable", "Address" }, { "dbTextColumn", "Name" }, { "dbValueColumn", "Id" } }, true, aysIgnore: true)
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.BillToAddressName, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.BillToAddressName)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.BillToAddressCountry, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.BillToAddressCountry)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.BillToAddressStateProvince)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.BillToAddressStateProvince)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.BillToAddressCity, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.BillToAddressCity)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.BillToAddressAddress1, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.BillToAddressAddress1)
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.BillToAddressAddress2)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.BillToAddressAddress2)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.BillToAddressZipPostalCode, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.BillToAddressZipPostalCode)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.BillToAddressPhoneNumber, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.BillToAddressPhoneNumber)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.BillToAddressFaxNumber)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.BillToAddressFaxNumber)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.BillToAddressEmail, required: true)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamEditorFor(model => model.BillToAddressEmail)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    function updateAddressInfo(type) {
+        if (type == 'ShipTo') {
+            var postData = {
+                addressId: $('#ShipToAddressId').val()
+            };
+            addAntiForgeryToken(postData);
+        } else if (type == 'BillTo') {
+            var postData = {
+                addressId: $('#BillToAddressId').val()
+            };
+            addAntiForgeryToken(postData);
+        }
+        $.ajax({
+            cache: false,
+            type: "POST",
+            url: "@(Url.Action("AddressInfo", "Common"))",
+            data: postData,
+            success: function (data) {
+                if (data != null && data.addressInfo != null) {
+                    if (type == 'ShipTo') {
+                        $('#ShipToAddressName').val(data.addressInfo.Name);
+                        $('#ShipToAddressCountry').val(data.addressInfo.Country);
+                        $('#ShipToAddressStateProvince').val(data.addressInfo.StateProvince);
+                        $('#ShipToAddressCity').val(data.addressInfo.City);
+                        $('#ShipToAddressAddress1').val(data.addressInfo.Address1);
+                        $('#ShipToAddressAddress2').val(data.addressInfo.Address2);
+                        $('#ShipToAddressZipPostalCode').val(data.addressInfo.ZipPostalCode);
+                        $('#ShipToAddressPhoneNumber').val(data.addressInfo.PhoneNumber);
+                        $('#ShipToAddressFaxNumber').val(data.addressInfo.FaxNumber);
+                        $('#ShipToAddressEmail').val(data.addressInfo.Email);
+                    } else if (type == 'BillTo') {
+                        $('#BillToAddressName').val(data.addressInfo.Name);
+                        $('#BillToAddressCountry').val(data.addressInfo.Country);
+                        $('#BillToAddressStateProvince').val(data.addressInfo.StateProvince);
+                        $('#BillToAddressCity').val(data.addressInfo.City);
+                        $('#BillToAddressAddress1').val(data.addressInfo.Address1);
+                        $('#BillToAddressAddress2').val(data.addressInfo.Address2);
+                        $('#BillToAddressZipPostalCode').val(data.addressInfo.ZipPostalCode);
+                        $('#BillToAddressPhoneNumber').val(data.addressInfo.PhoneNumber);
+                        $('#BillToAddressFaxNumber').val(data.addressInfo.FaxNumber);
+                        $('#BillToAddressEmail').val(data.addressInfo.Email);
+                    }
+                }
+            },
+            error: function (xhr, ajaxOptions, thrownError) {
+                showBSModal({ title: 'ERROR', body: thrownError });
+            },
+            traditional: true
+        });
+    };
+
+    $(document).ready(function () {
+        $("#ShipToAddressId").change(function (e) {
+            e.preventDefault();
+            updateAddressInfo('ShipTo');
+        });
+
+        $("#BillToAddressId").change(function (e) {
+            e.preventDefault();
+            updateAddressInfo('BillTo');
+        });
+    });
+
+</script>

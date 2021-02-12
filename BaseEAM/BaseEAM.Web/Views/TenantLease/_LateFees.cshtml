@@ -1,0 +1,110 @@
+﻿@model TenantLeaseModel
+
+<div class="panel-group">
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.LateFeeEnabled)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamCheckBoxFor(model => model.LateFeeEnabled)
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr />
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamEditorFor(model => model.GracePeriodDays)
+                        </div>
+                        <div style="padding-top: 10px">
+                            <b>@T("TenantLease.GracePeriodDays")</b>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="col-md-1" style="padding-top: 10px">
+                            @Html.RadioButtonFor(model => model.LateFeeOption, (int)LateFeeOption.FlatFee, new { @checked = "true" })
+                        </div>
+                        <div class="col-md-2" style="padding-top: 10px">
+                            <b>@T("TenantLease.FlatFee") :</b>
+                        </div>
+                        <div class="col-md-2">
+                            @Html.BaseEamEditorFor(model => model.FlatFee)
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="col-md-1" style="padding-top: 10px">
+                            @Html.RadioButtonFor(model => model.LateFeeOption, (int)LateFeeOption.BaseAmountPerDay)
+                        </div>
+                        <div class="col-md-2">
+                            @Html.BaseEamEditorFor(model => model.BaseAmountPerDay)
+                        </div>
+                        <div class="col-md-3" style="padding-top: 10px">
+                            <b>(@T("TenantLease.BaseAmountPerDay")) + </b>
+                        </div>
+                        <div class="col-md-2">
+                            @Html.BaseEamEditorFor(model => model.AmountPerDay)
+                        </div>
+                        <div class="col-md-2" style="padding-top: 10px">
+                            <b>@T("TenantLease.AmountPerDay")*</b>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="col-md-1" style="padding-top: 10px">
+                            @Html.RadioButtonFor(model => model.LateFeeOption, (int)LateFeeOption.PercentOfRentPerDay)
+                        </div>
+                        <div class="col-md-2">
+                            @Html.BaseEamEditorFor(model => model.PercentOfRentPerDay)
+                        </div>
+                        <div class="col-md-9" style="padding-top: 10px">
+                            <b>@T("TenantLease.PercentOfRentPerDay")</b>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <h4>*@T("LateFees.ExcludingGracePeriodDays")</h4>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="col-md-1">
+                            @Html.BaseEamCheckBoxFor(model => model.StopPerDay)
+                        </div>
+                        <div class="col-md-11" style="padding-top: 10px">
+                            <b>@T("TenantLease.StopPerDay")</b>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="col-md-2">
+                            @Html.BaseEamLabelFor(model => model.MaxLateFee)
+                        </div>
+                        <div class="col-md-2">
+                            @Html.BaseEamEditorFor(model => model.MaxLateFee)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

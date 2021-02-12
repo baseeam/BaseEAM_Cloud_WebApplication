@@ -1,0 +1,121 @@
+﻿@using BaseEAM.Services.Security
+@model NotificationSequenceModel
+@{
+    var defaultGridPageSize = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().DefaultGridPageSize;
+    var gridPageSizes = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().GridPageSizes;
+    var primarySystemCurrencySymbol = EngineContext.Current.Resolve<BaseEAM.Core.IWorkContext>().WorkingCurrency.CurrencySymbol;
+
+    var permissionService = EngineContext.Current.Resolve<BaseEAM.Services.IPermissionService>();
+    var allowCreate = permissionService.Authorize(StandardPermissionName.Administration_SLADefinition_Create);
+    var allowRead = permissionService.Authorize(StandardPermissionName.Administration_SLADefinition_Read);
+    var allowUpdate = permissionService.Authorize(StandardPermissionName.Administration_SLADefinition_Update);
+    var allowDelete = permissionService.Authorize(StandardPermissionName.Administration_SLADefinition_Delete);
+}
+<div class="validation-summary-errors none-display" id="notificationSequences-error">
+</div>
+<div id="group-notificationSequences" class="panel-group">
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <div id="notificationSequences-grid"></div>
+            <script>
+                function additionalData1() {
+                    var data = {
+                        slaTermId: '@Model.SLATermId'
+                    };
+                    addAntiForgeryToken(data);
+                    return data;
+                }
+                $(document).ready(function () {
+                    $("#notificationSequences-grid").kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("NotificationSequenceList", "SLADefinition"))",
+                                    type: "POST",
+                                    dataType: "json",
+                                    data: additionalData1
+                                },
+                                parameterMap: function(data, operation) {
+                                    return data;
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: "Id",
+                                    fields: {
+                                        Id: { hidden: true, editable: false, defaultValue: 0 },
+                                        SLATermId: { hidden: true, editable: false, defaultValue: '@Model.SLATermId' },
+                                        Sequence: { editable: true, type: 'number' },
+                                        SendingTimeHours: { editable: true, type: 'number', default: 0 },
+                                        SendingTimeMinutes: { editable: true, type: 'number' },
+                                        Users: { editable: true, type: 'string', validation: { required: { message: '@T("Common.Users.Required")'}} },
+                                        MessageTemplate: { editable: true, type: 'string', validation: { required: { message: '@T("MessageTemplate.Required")'}} }
+                                    }
+                                }
+                            },
+                            batch: true,
+                            error: function(e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            change: function (e) {
+                                if (e.action == "itemchange") {
+                                    e.items[0].dirtyFields = e.items[0].dirtyFields || {};
+                                    e.items[0].dirtyFields[e.field] = true;
+                                }
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)],
+                            @Html.Partial("_GridPagerMessages")
+                        },
+                        toolbar: ["create", "save", "cancel"],
+                        saveChanges: function(e) {
+                            e.preventDefault();
+                            BaseEam.Grid.saveChanges('@Url.Action("SaveChanges", "SLADefinition")', '#notificationSequences-grid', '#notificationSequences-error');
+                        },
+                        sortable: true,
+                        editable: true,
+                        save: function (data) {
+                        },
+                        scrollable: false,
+                        columns: [{
+                            field: "Sequence",
+                            title: "@T("Common.Sequence")",
+                            template: "#=BaseEam.Grid.dirtyHtml(data,'Sequence')# #:Sequence ? Sequence: '' #"
+                        },{
+                            field: "SendingTimeHours",
+                            title: "@T("NotificationSequence.SendingTimeHours")",
+                            template: '#= SendingTimeHours != null ? kendo.toString(SendingTimeHours, "n") : "" #'
+                        },{
+                            field: "SendingTimeMinutes",
+                            title: "@T("NotificationSequence.SendingTimeMinutes")",
+                            template: '#= SendingTimeMinutes != null ? kendo.toString(SendingTimeMinutes, "n") : "" #'
+                        },{
+                            field: "Users",
+                            title: "@T("Common.Users")",
+                            template: "#=BaseEam.Grid.dirtyHtml(data,'Users')# #:Users ? Users: '' #"
+                        },{
+                            field: "MessageTemplate",
+                            title: "@T("MessageTemplate")",
+                            template: "#=BaseEam.Grid.dirtyHtml(data,'MessageTemplate')# #:MessageTemplate ? MessageTemplate: '' #"
+                        },{
+                            command: { name: "destroy", text: "@T("Common.Delete")" },
+                            width: 100
+                        }]
+                    });
+                });
+            </script>
+        </div>
+    </div>
+</div>

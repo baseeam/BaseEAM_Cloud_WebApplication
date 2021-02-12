@@ -1,0 +1,223 @@
+﻿@model RequestForQuotationModel
+@Html.HiddenFor(model => model.Id)
+@Html.HiddenFor(model => model.IsNew)
+@Html.HiddenFor(model => model.Status)
+@Html.HiddenFor(model => model.AvailableActions)
+
+<script>
+    $(document).ready(function () {
+        bindBootstrapTabSelectEvent('requestForQuotation-edit');
+    });
+
+    function savedCallback(data) {
+        viewModel.isNew(false);
+        viewModel.number(data.number);
+    }
+</script>
+
+<div class="content">
+    <div class="form-horizontal">
+        <div id="requestForQuotation-edit" class="nav-tabs-custom">
+            <ul class="nav nav-tabs">
+                @Html.RenderBootstrapTabHeader("tab-info", @T("RequestForQuotation.Info"), true)
+                @Html.RenderBootstrapTabHeader("tab-lineItems", @T("Common.LineItems"))
+                @Html.RenderBootstrapTabHeader("tab-shipto", @T("RequestForQuotation.ShipTo"))
+                @Html.RenderBootstrapTabHeader("tab-vendors", @T("RequestForQuotation.Vendors"))
+                @Html.RenderBootstrapTabHeader("tab-quotations", @T("RequestForQuotation.Quotations"))
+                @Html.RenderBootstrapTabHeader("tab-assignmentHistories", @T("AssignmentHistories"))
+                @Html.RenderBootstrapTabHeader("tab-attachments", @T("Common.Attachments"))
+                @Html.RenderBootstrapTabHeader("tab-comments", @T("Common.Comments"))
+            </ul>
+            <div class="tab-content">
+                @Html.RenderBootstrapTabContent("tab-info", @TabInfo(), true)
+                @Html.RenderBootstrapTabContent("tab-lineItems", @TabLineItems(), dataBind: "visible: !isNew()")
+                @Html.RenderBootstrapTabContent("tab-shipto", @TabShipTo(), dataBind: "visible: !isNew()")
+                @Html.RenderBootstrapTabContent("tab-vendors", @TabVendors(), dataBind: "visible: !isNew()")
+                @Html.RenderBootstrapTabContent("tab-quotations", @TabQuotations(), dataBind: "visible: !isNew()")
+                @Html.RenderBootstrapTabContent("tab-assignmentHistories", @TabAssignmentHistories(), dataBind: "visible: !isNew()")
+                @Html.RenderBootstrapTabContent("tab-attachments", @TabAttachments(), dataBind: "visible: !isNew()")
+                @Html.RenderBootstrapTabContent("tab-comments", @TabComments(), dataBind: "visible: !isNew()")
+            </div>
+        </div>
+    </div>
+</div>
+
+@{
+    //custom tabs
+    var eventMessage = new AdminTabStripCreated(this.Html, "requestForQuotation-edit");
+    EngineContext.Current.Resolve<IEventPublisher>().Publish(eventMessage);
+    foreach (var eventBlock in eventMessage.BlocksToRender)
+    {
+        @eventBlock
+    }
+}
+
+@helper TabInfo()
+{
+    <div class="panel-group">
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.Number, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                <div class="form-text-row" data-bind="html: number">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.Description)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamEditorFor(model => model.Description)
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.Priority, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.EnumDropDownListFor(model => model.Priority, new { @class = "form-control" })
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.SiteId, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamComboBoxFor(model => model.SiteId, "SiteList", "Site", null, true)
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.RequestorId)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamComboBoxFor(model => model.RequestorId, "UserList", "Site",
+                                            new RouteValueDictionary { { "parentFieldName", "SiteId" } }, true)
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.PurchaseRequestId)
+                                @Html.HiddenFor(model => model.PurchaseRequestId)
+                            </div>
+                            <div class="col-md-9">
+                                @if (!string.IsNullOrEmpty(Model.PurchaseRequestNumber))
+                                {
+                                    @Html.ActionLink(Model.PurchaseRequestNumber, "Edit", "PurchaseRequest", new { Id = (long?)Model.PurchaseRequestId }, new { target = "_blank" })
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.Status, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                <div class="form-text-row" data-bind="html: status">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.AssignedUsers, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                <div class="form-text-row" id="assignedUsers" data-bind="html: assignedUsers"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.ExpectedQuoteDate)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamEditorFor(model => model.ExpectedQuoteDate)
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.DateRequired)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamEditorFor(model => model.DateRequired)
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.IsSent)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.CheckBoxFor(model => model.IsSent, new { data_bind = "disable: true" })
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr />
+                @if (Model.Id > 0 && Model.IsNew == false)
+                {
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <div class="col-md-3">
+                                    @Html.BaseEamLabelFor(model => model.FirstCreatedBy)
+                                </div>
+                                <div class="col-md-9">
+                                    @Html.BaseEamDisplayFor(model => model.FirstCreatedBy)
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-md-3">
+                                    @Html.BaseEamLabelFor(model => model.LastUpdatedBy)
+                                </div>
+                                <div class="col-md-9">
+                                    @Html.BaseEamDisplayFor(model => model.LastUpdatedBy)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@helper TabLineItems()
+{
+    @Html.Partial("_LineItems", new RequestForQuotationItemModel { RequestForQuotationId = Model.Id })
+}
+
+@helper TabShipTo()
+{
+    @Html.Partial("_ShipTo", Model)
+}
+
+@helper TabVendors()
+{
+    @Html.Partial("_Vendors", new RequestForQuotationVendorModel { RequestForQuotationId = Model.Id })
+}
+
+@helper TabQuotations()
+{
+    @Html.Partial("_Quotations", new RequestForQuotationVendorModel { RequestForQuotationId = Model.Id })
+}
+
+@helper TabAssignmentHistories()
+{
+    @Html.Partial("AssignmentHistory", new AssignmentHistoryModel { EntityId = Model.Id, EntityType = EntityType.RequestForQuotation })
+}
+
+@helper TabAttachments()
+{
+    @Html.Partial("Attachment", new AttachmentModel { EntityId = Model.Id, EntityType = EntityType.RequestForQuotation })
+}
+
+@helper TabComments()
+{
+    @Html.Partial("Comment", new CommentModel { EntityId = Model.Id, EntityType = EntityType.RequestForQuotation })
+}

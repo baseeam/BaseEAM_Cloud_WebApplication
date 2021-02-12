@@ -1,0 +1,19 @@
+﻿
+----------------------------------------
+BaseEam:		v.1.0.0
+Import profile:		Profile30
+Entity:			Asset
+File:			Asset4.xlsx
+Executed by:		bt@baseeam.com
+Started:		5/31/2018 4:30:41 AM
+Finished:		5/31/2018 4:30:43 AM
+Duration:		0:00:01.3803898
+
+Total rows:		86
+SkippedRecords:		0
+
+Warnings:		0
+
+Errors:			0
+
+

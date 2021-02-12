@@ -1,0 +1,125 @@
+﻿@model SearchModel
+@{
+    var defaultGridPageSize = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().DefaultGridPageSize;
+    var gridPageSizes = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().GridPageSizes;
+    var primarySystemCurrencySymbol = EngineContext.Current.Resolve<BaseEAM.Core.IWorkContext>().WorkingCurrency.CurrencySymbol;
+}
+<div class="content" id="createPurchaseOrderItems-popup">
+    <div class="validation-summary-errors none-display" id="createPurchaseOrderItems-error">
+    </div>
+    <div class="form-horizontal">
+        <div class="panel-group">
+            @Html.Partial("Filter", Model)
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <div id="createPurchaseOrderItems-grid"></div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function additionalData() {
+            var data = {
+                searchValues: $("div.panel-search").find(':input').serialize(),
+                purchaseOrderId: $('#Id').val()
+            };
+            addAntiForgeryToken(data);
+            return data;
+        }
+
+        $("#createPurchaseOrderItems-grid").kendoGrid({
+            dataSource: {
+                type: "json",
+                transport: {
+                    read: {
+                        url: "@Html.Raw(Url.Action("CreatePurchaseOrderItemList", "PurchaseOrder"))",
+                        type: "POST",
+                        dataType: "json",
+                        data: additionalData
+                    }
+                },
+                schema: {
+                    data: "Data",
+                    total: "Total",
+                    errors: "Errors",
+                    model: {
+                        id: "ItemId",
+                        fields: {
+                            ItemName: { editable: false },
+                            ItemUnitOfMeasureName: { editable: false },
+                            UnitPrice: { editable: true, type: 'number', validation: { required: { message: '@T("PurchaseOrderItem.UnitPrice.Required")'}} },
+                            QuantityOrdered: { editable: true, type: 'number', validation: { required: { message: '@T("PurchaseOrderItem.QuantityOrdered.Required")'}} },
+                            TaxRate: { editable: true, type: 'number' }
+                        }
+                    }
+                },
+                batch: true,
+                error: function (e) {
+                    display_kendoui_grid_error(e);
+                    // Cancel the changes
+                    this.cancelChanges();
+                },
+                change: function (e) {
+                    if (e.action == "itemchange") {
+                        e.items[0].dirtyFields = e.items[0].dirtyFields || {};
+                        e.items[0].dirtyFields[e.field] = true;
+                    }
+                },
+                pageSize: @(defaultGridPageSize),
+                serverPaging: true,
+                serverFiltering: true,
+                serverSorting: true
+            },
+            pageable: {
+                refresh: true,
+                pageSizes: [@(gridPageSizes)],
+                @Html.Partial("_GridPagerMessages")
+            },
+            navigatable: true,
+            sortable: true,
+            editable: true,
+            scrollable: false,
+            columns: [{
+                field: "ItemName",
+                title: "@T("Item")"
+            }, {
+                field: "ItemUnitOfMeasureName",
+                title: "@T("UnitOfMeasure")",
+                sortable: false
+            }, {
+                field: "UnitPrice",
+                title: "@T("PurchaseOrderItem.UnitPrice") [@(primarySystemCurrencySymbol)]",
+                template: '#= UnitPrice != null ? kendo.toString(UnitPrice, "n") : "" #',
+                sortable: false
+            },{
+                field: "QuantityOrdered",
+                title: "@T("PurchaseOrderItem.QuantityOrdered")",
+                template: '#= QuantityOrdered != null ? kendo.toString(QuantityOrdered, "n") : "" #',
+                sortable: false
+            },{
+                field: "TaxRate",
+                title: "@T("PurchaseOrderItem.TaxRate")",
+                template: '#= TaxRate != null ? kendo.toString(TaxRate, "n") : "" #',
+                sortable: false
+            }
+            ]
+        });
+
+        //search button
+        $('#createPurchaseOrderItems-popup').find('#search').click(function () {
+            //search
+            var grid = $('#createPurchaseOrderItems-grid').data('kendoGrid');
+            grid.dataSource.page(1); //new search. Set page size to 1
+            //grid.dataSource.read(); we already loaded the grid above using "page" function
+            return false;
+        });
+
+        $("#createPurchaseOrderItems-popup div.panel-search").find(':input').keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#createPurchaseOrderItems-popup').find('#search').click();
+                return false;
+            }
+        });
+    </script>
+</div>

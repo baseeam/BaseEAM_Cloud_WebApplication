@@ -1,0 +1,110 @@
+﻿@using BaseEAM.Services.Security
+@model TenantModel
+@Html.HiddenFor(model => model.Id)
+
+@{
+    //page title
+    ViewBag.Title = T("Tenant.Portal").Text;
+}
+
+<script>
+    $(document).ready(function () {
+        bindBootstrapTabSelectEvent('tenant-view');
+    });
+</script>
+
+<div class="content-header clearfix">
+    <h1 class="pull-left">
+        @T("Tenant.Portal").Text
+    </h1>
+</div>
+
+@Html.AntiForgeryToken()
+<div class="content">
+    <div class="form-horizontal">
+        <div id="tenant-view" class="nav-tabs-custom">
+            <ul class="nav nav-tabs">
+                @Html.RenderBootstrapTabHeader("tab-info", @T("Tenant.Info"), true)
+                @Html.RenderBootstrapTabHeader("tab-contacts", @T("Tenant.Contacts"))
+                @Html.RenderBootstrapTabHeader("tab-tenantLeases", @T("Tenant.TenantLeases"))
+                @Html.RenderBootstrapTabHeader("tab-tenantPayments", @T("Tenant.TenantPayments"))
+            </ul>
+            <div class="tab-content">
+                @Html.RenderBootstrapTabContent("tab-info", @TabInfo(), true)
+                @Html.RenderBootstrapTabContent("tab-contacts", @TabContacts())
+                @Html.RenderBootstrapTabContent("tab-tenantLeases", @TabTenantLeases())
+                @Html.RenderBootstrapTabContent("tab-tenantPayments", @TabTenantPayments())
+            </div>
+        </div>
+    </div>
+</div>
+
+@{
+    //custom tabs
+    var eventMessage = new AdminTabStripCreated(this.Html, "tenant-view");
+    EngineContext.Current.Resolve<IEventPublisher>().Publish(eventMessage);
+    foreach (var eventBlock in eventMessage.BlocksToRender)
+    {
+        @eventBlock
+    }
+}
+
+@helper TabInfo()
+{
+    <div class="panel-group">
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.Name, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamDisplayFor(model => model.Name)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr />
+                <h4>@T("Address")</h4>
+                @Html.HiddenFor(model => model.AddressId)
+                @Html.EditorFor(model => model.Address, "Address")
+                <hr />
+                @if (Model.Id > 0 && Model.IsNew == false)
+                {
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.FirstCreatedBy)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamDisplayFor(model => model.FirstCreatedBy)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            @Html.BaseEamLabelFor(model => model.LastUpdatedBy)
+                        </div>
+                        <div class="col-md-9">
+                            @Html.BaseEamDisplayFor(model => model.LastUpdatedBy)
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+@helper TabContacts()
+{
+    @Html.Partial("_ContactsView", new ContactModel())
+}
+
+@helper TabTenantLeases()
+{
+    @Html.Partial("_TenantLeasesView", new TenantLeaseModel())
+}
+
+@helper TabTenantPayments()
+{
+    @Html.Partial("_TenantPaymentsView", new TenantPaymentModel())
+}

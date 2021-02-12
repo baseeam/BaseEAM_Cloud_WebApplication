@@ -1,0 +1,51 @@
+﻿@{
+    //page title
+    ViewBag.Title = T("Asset.BarcodeScanner").Text;
+    var barcodeType = (BarcodeLib.TYPE)EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().BarcodeType;
+    Html.AppendScriptParts("~/Scripts/quagga.min.js");
+    Html.AppendScriptParts("~/Scripts/baseeam.barcodescanner.js");
+}
+
+@Html.AntiForgeryToken()
+<div class="content-header clearfix">
+    <h1 class="pull-left">
+        @T("Asset.BarcodeScanner")
+    </h1>
+</div>
+
+<div class="content">
+    <div id="livestream_scanner">
+        <div id="interactive" class="viewport"></div>
+    </div>
+    <button type="button" class="btn btn-primary" id="refresh">Refresh</button>
+</div>
+<script src="//webrtc.github.io/adapter/adapter-latest.js" type="text/javascript"></script>
+<style>
+    #interactive.viewport {
+        position: relative;
+        width: 100%;
+        height: auto;
+        overflow: hidden;
+        text-align: center;
+    }
+
+    #interactive.viewport > canvas, #interactive.viewport > video {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    canvas.drawing, canvas.drawingBuffer {
+        position: absolute;
+        left: 0;
+        top: 0;
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        $('#refresh').click(function () {
+            location.reload(); 
+        });
+        startScanner('@barcodeType');
+    });
+</script>

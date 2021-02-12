@@ -1,0 +1,146 @@
+﻿@using BaseEAM.Services.Security
+@model RequestForQuotationItemModel
+@{
+    var permissionService = EngineContext.Current.Resolve<BaseEAM.Services.IPermissionService>();
+    var allowCreate = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Create);
+    var allowRead = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Read);
+    var allowUpdate = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Update);
+    var allowDelete = permissionService.Authorize(StandardPermissionName.Purchasing_RequestForQuotation_Delete);
+
+    var primarySystemCurrencySymbol = EngineContext.Current.Resolve<BaseEAM.Core.IWorkContext>().WorkingCurrency.CurrencySymbol;
+}
+
+<div id="panel-requestForQuotationItem" class="panel panel-default eam-panel">
+    <div class="panel-heading">
+        <button type="button" id="saveRequestForQuotationItemDetail" class="btn btn-primary@(allowCreate || allowUpdate ? "" : " none-display")" title="@T("Common.Save")">
+            <i class="fa fa-floppy-o"></i>
+        </button>
+        <button type="button" id="cancelRequestForQuotationItemDetail" class="btn btn-primary" title="@T("Common.Cancel")">
+            <i class="fa fa-ban"></i>
+        </button>
+    </div>
+    <div class="panel-body">
+        @Html.Hidden("RequestForQuotationId", Model.RequestForQuotationId)
+        @Html.Hidden("RequestForQuotationItemId", Model.Id)
+        <div id="requestForQuotationItem-error" class="validation-summary-errors none-display">
+        </div>
+        <div class="col-md-6">
+            <div class="form-group">
+                <div class="col-md-3">
+                    @Html.BaseEamLabelFor(model => model.Sequence, required: true)
+                </div>
+                <div class="col-md-9">
+                    @Html.BaseEamEditorFor(model => model.Sequence)
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-3">
+                    @Html.BaseEamLabelFor(model => model.ItemId, required: true)
+                    @Html.HiddenFor(model => model.ItemId)
+                </div>
+                <div class="col-md-9">
+                    @Html.ItemLookupFor(model => model.ItemName)
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-3">
+                    @Html.BaseEamLabelFor(model => model.ItemUnitOfMeasureId)
+                </div>
+                <div class="col-md-9">
+                    <div class="form-text-row" id="uom">
+                        @(Model.ItemUnitOfMeasureId != null ? Model.ItemUnitOfMeasureName : "")
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-3">
+                    @Html.BaseEamLabelFor(model => model.QuantityRequested, required: true)
+                </div>
+                <div class="col-md-9">
+                    @Html.BaseEamEditorFor(model => model.QuantityRequested)
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript">
+
+        $("#saveRequestForQuotationItemDetail").click(function (e) {
+            e.preventDefault();
+            var $group = $("#panel-requestForQuotationItem :input");
+            var postData = $group.serializeJSON({ checkboxUncheckedValue: "false" });
+            //change Id property name so it can map to MVC model
+            postData.Id = postData.RequestForQuotationItemId;
+            addAntiForgeryToken(postData);
+
+            $.ajax({
+                cache: false,
+                type: "POST",
+                url: "@(Url.Action("SaveRequestForQuotationItem", "RequestForQuotation"))",
+                data: postData,
+                success: function (data) {
+                    if (data && data.Errors) {
+                        showErrors(data.Errors, '#requestForQuotationItem-error');
+                    } else {
+                        //then toggle the panel
+                        togglePanelRequestForQuotationItem(false);
+
+                        //refresh grid
+                        var grid = $('#requestForQuotationItems-grid').data('kendoGrid');
+                        grid.dataSource.page(1);
+                    }
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    showBSModal({ title: 'ERROR', body: thrownError });
+                },
+                traditional: true
+            });
+        });
+
+        $("#cancelRequestForQuotationItemDetail").click(function (e) {
+            e.preventDefault();
+            var postData = {
+                id: $("#RequestForQuotationItemId").val()
+            };
+            addAntiForgeryToken(postData);
+
+            $.ajax({
+                cache: false,
+                type: "POST",
+                url: "@(Url.Action("CancelRequestForQuotationItem", "RequestForQuotation"))",
+                data: postData,
+                success: function (data) {
+                    //toggle the panel
+                    togglePanelRequestForQuotationItem(false);
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    showBSModal({ title: 'ERROR', body: thrownError });
+                },
+                traditional: true
+            });
+        });
+
+        window.EventBroker.subscribe(BaseEam.Events.SLItemSelected, function (message, data) {
+            var postData = {
+                itemId: $("#ItemId").val()
+            };
+            addAntiForgeryToken(postData);
+
+            $.ajax({
+                cache: false,
+                type: "POST",
+                url: "@(Url.Action("ItemInfo", "Item"))",
+                data: postData,
+                success: function (data) {
+                    if (data != null && data.itemInfo != null) {
+                        $("#panel-requestForQuotationItem").find("#uom").html(data.itemInfo.UnitOfMeasure.Name);
+                    }
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    showBSModal({ title: 'ERROR', body: thrownError });
+                },
+                traditional: true
+            });
+        });
+
+    </script>
+</div>

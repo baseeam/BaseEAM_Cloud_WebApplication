@@ -1,0 +1,112 @@
+﻿@using BaseEAM.Services.Security
+@model PurchaseOrderMiscCostModel
+@{
+    var permissionService = EngineContext.Current.Resolve<BaseEAM.Services.IPermissionService>();
+    var allowCreate = permissionService.Authorize(StandardPermissionName.Purchasing_PurchaseOrder_Create);
+    var allowRead = permissionService.Authorize(StandardPermissionName.Purchasing_PurchaseOrder_Read);
+    var allowUpdate = permissionService.Authorize(StandardPermissionName.Purchasing_PurchaseOrder_Update);
+    var allowDelete = permissionService.Authorize(StandardPermissionName.Purchasing_PurchaseOrder_Delete);
+
+    var primarySystemCurrencySymbol = EngineContext.Current.Resolve<BaseEAM.Core.IWorkContext>().WorkingCurrency.CurrencySymbol;
+}
+
+<div id="panel-purchaseOrderMiscCost" class="panel panel-default eam-panel">
+    <div class="panel-heading">
+        <button type="button" id="savePurchaseOrderMiscCostDetail" class="btn btn-primary@(allowCreate || allowUpdate ? "" : " none-display")" title="@T("Common.Save")">
+            <i class="fa fa-floppy-o"></i>
+        </button>
+        <button type="button" id="cancelPurchaseOrderMiscCostDetail" class="btn btn-primary" title="@T("Common.Cancel")">
+            <i class="fa fa-ban"></i>
+        </button>
+    </div>
+    <div class="panel-body">
+        @Html.Hidden("PurchaseOrderId", Model.PurchaseOrderId)
+        @Html.Hidden("PurchaseOrderMiscCostId", Model.Id)
+        <div id="purchaseOrderMiscCost-error" class="validation-summary-errors none-display">
+        </div>
+        <div class="col-md-10">
+            <div class="form-group">
+                <div class="col-md-3">
+                    @Html.BaseEamLabelFor(model => model.POMiscCostTypeId, required: true)
+                </div>
+                <div class="col-md-9">
+                    @Html.BaseEamComboBoxFor(model => model.POMiscCostTypeId, "ValueItems", "Common",
+                                            new RouteValueDictionary { { "additionalField", "category" }, { "additionalValue", "PO Misc Cost Type" } }, true)
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-3">
+                    @Html.BaseEamLabelFor(model => model.Description)
+                </div>
+                <div class="col-md-9">
+                    @Html.BaseEamEditorFor(model => model.Description)
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-3">
+                    @Html.BaseEamLabelFor(model => model.Amount, required: true)
+                </div>
+                <div class="col-md-9">
+                    @Html.BaseEamEditorFor(model => model.Amount, postfix: primarySystemCurrencySymbol)
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript">
+
+        $("#savePurchaseOrderMiscCostDetail").click(function (e) {
+            e.preventDefault();
+            var $group = $("#panel-purchaseOrderMiscCost :input");
+            var postData = $group.serializeJSON({ checkboxUncheckedValue: "false" });
+            //change Id property name so it can map to MVC model
+            postData.Id = postData.PurchaseOrderMiscCostId;
+            addAntiForgeryToken(postData);
+
+            $.ajax({
+                cache: false,
+                type: "POST",
+                url: "@(Url.Action("SavePurchaseOrderMiscCost", "PurchaseOrder"))",
+                data: postData,
+                success: function (data) {
+                    if (data && data.Errors) {
+                        showErrors(data.Errors, '#purchaseOrderMiscCost-error');
+                    } else {
+                        //then toggle the panel
+                        togglePanelPurchaseOrderMiscCost(false);
+
+                        //refresh grid
+                        var grid = $('#purchaseOrderMiscCosts-grid').data('kendoGrid');
+                        grid.dataSource.page(1);
+                    }
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    showBSModal({ title: 'ERROR', body: thrownError });
+                },
+                traditional: true
+            });
+        });
+
+        $("#cancelPurchaseOrderMiscCostDetail").click(function (e) {
+            e.preventDefault();
+            var postData = {
+                id: $("#PurchaseOrderMiscCostId").val()
+            };
+            addAntiForgeryToken(postData);
+
+            $.ajax({
+                cache: false,
+                type: "POST",
+                url: "@(Url.Action("CancelPurchaseOrderMiscCost", "PurchaseOrder"))",
+                data: postData,
+                success: function (data) {
+                    //toggle the panel
+                    togglePanelPurchaseOrderMiscCost(false);
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    showBSModal({ title: 'ERROR', body: thrownError });
+                },
+                traditional: true
+            });
+        });
+    </script>
+</div>

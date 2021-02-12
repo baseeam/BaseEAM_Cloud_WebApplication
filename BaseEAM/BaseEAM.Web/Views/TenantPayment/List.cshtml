@@ -1,0 +1,291 @@
+﻿@using BaseEAM.Services.Security
+@model SearchModel
+@{
+    //page title
+    ViewBag.Title = T("Property.TenantPayment").Text;
+
+    var defaultGridPageSize = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().DefaultGridPageSize;
+    var gridPageSizes = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().GridPageSizes;
+    var primarySystemCurrencySymbol = EngineContext.Current.Resolve<BaseEAM.Core.IWorkContext>().WorkingCurrency.CurrencySymbol;
+
+    var permissionService = EngineContext.Current.Resolve<BaseEAM.Services.IPermissionService>();
+    var allowCreate = permissionService.Authorize(StandardPermissionName.Property_TenantPayment_Create);
+    var allowRead = permissionService.Authorize(StandardPermissionName.Property_TenantPayment_Read);
+    var allowUpdate = permissionService.Authorize(StandardPermissionName.Property_TenantPayment_Update);
+    var allowDelete = permissionService.Authorize(StandardPermissionName.Property_TenantPayment_Delete);
+}
+
+@Html.AntiForgeryToken()
+<div class="content-header clearfix">
+    <h1 class="pull-left">
+        @T("Property.TenantPayment")
+    </h1>
+</div>
+<div class="validation-summary-errors none-display" id="tenantPayment-error">
+</div>
+<div class="content">
+    <div class="form-horizontal">
+        <div class="panel-group">
+            @Html.Partial("Filter", Model)
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <div id="tenantPayments-grid"></div>
+
+                    <script>
+                        $(document).ready(function () {
+                            $("#tenantPayments-grid").kendoGrid({
+                                dataSource: {
+                                    type: "json",
+                                    transport: {
+                                        read: {
+                                            url: "@Html.Raw(Url.Action("List", "TenantPayment"))",
+                                            type: "POST",
+                                            dataType: "json",
+                                            data: additionalData
+                                        },
+                                        //This is used to map field to format that the server can understand
+                                        //it runs after the data (additionalData) populated
+                                        parameterMap: function (data, operation) {
+                                            sortMapping = [
+                                                { from: "TenantName", to: "Tenant.Name" },
+                                            ];
+                                            BaseEam.Grid.mapSortColumns(data.sort, sortMapping);
+                                            return data;
+                                        }
+                                    },
+                                    schema: {
+                                        data: "Data",
+                                        total: "Total",
+                                        errors: "Errors",
+                                        model: {
+                                            id: 'TenantId',
+                                            fields: {
+                                            }
+                                        }
+                                    },
+                                    error: function (e) {
+                                        display_kendoui_grid_error(e);
+                                        // Cancel the changes
+                                        this.cancelChanges();
+                                    },
+                                    pageSize: @(defaultGridPageSize),
+                                    serverPaging: true,
+                                    serverFiltering: true,
+                                    serverSorting: true
+                                },
+                                pageable: {
+                                    refresh: true,
+                                    pageSizes: [@(gridPageSizes)],
+                                    @Html.Partial("_GridPagerMessages")
+                                },
+                                sortable: true,
+                                detailInit: tenantPaymentCollectionDetailInit,
+                                editable: false,
+                                scrollable: false,
+                                columns: [{
+                                    field: "TenantName",
+                                    title: "@T("Tenant")"
+                                },{
+                                    field: "PropertyName",
+                                    title: "@T("Property")"
+                                }, {
+                                    field: "TenantLeaseNumber",
+                                    title: "@T("TenantLease")"
+                                },{
+                                    field: "DueDate",
+                                    title: "@T("TenantPayment.DueDate")",
+                                    template: '#= DueDate != null ? kendo.toString(kendo.parseDate(DueDate, "MM/dd/yyyy"), "MM/dd/yyyy") : "" #'
+                                },{
+                                    field: "ChargeTypeName",
+                                    title: "@T("ChargeType")",
+                                    width: 150
+                                },{
+                                    field: "DueAmount",
+                                    title: "@T("TenantPayment.DueAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= DueAmount != null ? kendo.toString(DueAmount, "n") : "" #'
+                                },{
+                                    field: "DaysLateCount",
+                                    title: "@T("TenantPayment.DaysLateCount")",
+                                },{
+                                    field: "LateFeeAmount",
+                                    title: "@T("TenantPayment.LateFeeAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= LateFeeAmount != null ? kendo.toString(LateFeeAmount, "n") : "" #'
+                                },{
+                                    field: "CollectedAmount",
+                                    title: "@T("TenantPayment.CollectedAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= CollectedAmount != null ? kendo.toString(CollectedAmount, "n") : "" #'
+                                },{
+                                    field: "BalanceAmount",
+                                    title: "@T("TenantPayment.BalanceAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= BalanceAmount != null ? kendo.toString(BalanceAmount, "n") : "" #'
+                                }]
+                            });
+                        });
+                    </script>
+                    <script type="text/javascript">
+                        $(document).ready(function () {
+                            //search button
+                            $('#search').click(function () {
+                                //search
+                                var grid = $('#tenantPayments-grid').data('kendoGrid');
+                                grid.dataSource.page(1); //new search. Set page size to 1
+                                //grid.dataSource.read(); we already loaded the grid above using "page" function
+                                return false;
+                            });
+
+                            $("div.panel-search").find(':input').keydown(function (event) {
+                                if (event.keyCode == 13) {
+                                    $("#search").click();
+                                    return false;
+                                }
+                            });
+                        });
+
+                        function additionalData() {
+                            var data = {
+                                searchValues: $("div.panel-search").find(':input').serialize()
+                            };
+                            addAntiForgeryToken(data);
+                            return data;
+                        }
+
+                        function additionalData2(e){
+                            var data = {
+                                tenantPaymentId : e.data.Id,
+                            }
+                            addAntiForgeryToken(data);
+                            return data;
+                        }
+
+                        function paymentMethodEditor(container, options) {
+                            var model = {
+                                field: options.field,
+                                required_msg: '@T("PaymentMethod.Required")',
+                                url: '@Url.Action("GetPaymentMethods", "Common")',
+                                additionalValue: "Payment Method"
+                            };
+                            BaseEam.Grid.comboBoxEditor(container, model);
+                        }
+
+                        function tenantPaymentCollectionDetailInit(e) {
+                            $("<div id='tenantPaymentCollectionsId-grid' />").appendTo(e.detailCell).kendoGrid({
+                                dataSource: {
+                                    type: "json",
+                                    transport: {
+                                        read: {
+                                            url: "@Html.Raw(Url.Action("TenantPaymentCollections", "TenantPayment"))",
+                                            type: "POST",
+                                            dataType: "json",
+                                            data: additionalData2(e)
+                                        },
+                                        //This is used to map field to format that the server can understand
+                                        //it runs after the data (additionalData) populated
+                                        parameterMap: function (data, operation) {
+                                            //Update the format date time when create
+                                            for (var model in data.created) {
+                                                var receivedDate = kendo.parseDate(data.created[model].ReceivedDate);
+                                                data.created[model].ReceivedDate = kendo.toString(receivedDate, "MM/dd/yyyy HH:mm");
+                                                data.created[model].PaymentMethodId = data.created[model].PaymentMethod.Id;
+                                            }
+                                            return data;
+                                        }
+                                    },
+                                    schema: {
+                                        data: "Data",
+                                        total: "Total",
+                                        errors: "Errors",
+                                        model: {
+                                            id: 'Id',
+                                            fields: {
+                                                IsNew: { hidden: true, editable: false, defaultValue: true },
+                                                Id: { hidden: true, editable: false, defaultValue: 0 },
+                                                TenantPaymentId: { hidden: true, editable: false, defaultValue: e.data.Id },//TenantPaymentId
+                                                ReceivedAmount: { editable: true, type: 'number', validation: { required: { message: '@T("TenantPaymentCollection.ReceivedAmount.Required")' } } },
+                                                ReceivedDate: { editable: true, type: 'date' },
+                                                CheckNum: { editable: true },
+                                                PaymentMethod: { editable: true, defaultValue: {} },
+                                            }
+                                        }
+                                    },
+                                    batch: true,
+                                    requestEnd: function (e) {
+                                        if (e.type == "update" || e.type == "create") {
+                                            this.read();
+                                            alert('run');
+                                        }
+                                    },
+                                    error: function (e) {
+                                        display_kendoui_grid_error(e);
+                                        // Cancel the changes
+                                        this.cancelChanges();
+                                    },
+                                    change: function (e) {
+                                        if (e.action == "itemchange") {
+                                            e.items[0].dirtyFields = e.items[0].dirtyFields || {};
+                                            e.items[0].dirtyFields[e.field] = true;
+                                        }
+                                    },
+                                    pageSize: @(defaultGridPageSize),
+                                    serverPaging: true,
+                                    serverFiltering: true,
+                                    serverSorting: true
+                                },
+                                pageable: {
+                                    refresh: true,
+                                    pageSizes: [@(gridPageSizes)],
+                                    @Html.Partial("_GridPagerMessages")
+                                },
+                                toolbar: ["create", "save", "cancel"],
+                                saveChanges: function (e) {
+                                    e.preventDefault();
+                                    $.when(kendo.ui.ExtOkCancelDialog.show({
+                                        title: "WARNING!",
+                                        message: '@T("Common.AreYouSure")',
+                                        icon: 'k-ext-warning'
+                                    }))
+                                        .done(function (response) {
+                                            if (response.button == "OK") {
+                                                BaseEam.Grid.saveChanges('@Url.Action("SaveChanges","TenantPayment")', '#tenantPaymentCollectionsId-grid', '#tenantPayment-error');
+                                            }
+                                        });
+                                },
+                                edit: function (e) {
+                                    if (e.model.IsNew == false) {
+                                        $('#tenantPaymentCollectionsId-grid').data("kendoGrid").closeCell();
+                                    }
+                                },
+                                sortable: true,
+                                editable: true,
+                                scrollable: false,
+                                columns: [{
+                                    field: "ReceivedAmount",
+                                    title: "@T("TenantPaymentCollection.ReceivedAmount") [@(primarySystemCurrencySymbol)]",
+                                    template: '#= ReceivedAmount != null ? kendo.toString(ReceivedAmount, "n") : "" #'
+                                }, {
+                                    field: "ReceivedDate",
+                                    title: "@T("TenantPaymentCollection.ReceivedDate")",
+                                    template: '#= ReceivedDate != null ? kendo.toString(kendo.parseDate(ReceivedDate, "MM/dd/yyyy"), "MM/dd/yyyy") : "" #'
+                                },{
+                                    field: "CheckNum",
+                                    title: "@T("TenantPaymentCollection.CheckNum")",
+                                    width: 150
+                                },{
+                                    field: "PaymentMethod",
+                                    title: "@T("TenantPaymentCollection.PaymentMethod")",
+                                    editor: paymentMethodEditor,
+                                    template: "#=BaseEam.Grid.dirtyHtml(data,'PaymentMethod.Name')# #:PaymentMethod.Name ? PaymentMethod.Name : '' #",
+                                    sortable: false
+                                }]
+                            });
+                        }
+
+                        window.EventBroker.subscribe("grid_batch_saved", function (message, data) {
+                            var parentGrid = $("#tenantPayments-grid").data("kendoGrid");
+                            parentGrid.dataSource.page(1);
+                        });
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

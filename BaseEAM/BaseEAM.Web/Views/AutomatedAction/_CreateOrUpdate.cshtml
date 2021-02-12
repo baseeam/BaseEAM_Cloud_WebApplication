@@ -1,0 +1,214 @@
+﻿@model AutomatedActionModel
+@Html.HiddenFor(model => model.Id)
+@Html.HiddenFor(model => model.IsNew)
+
+<script>
+    function toggleGroups() {
+        var triggerType = $("#@Html.FieldIdFor(model => model.TriggerType)").val();
+        $('#group-tg').hide();
+        if (triggerType == "1") {
+            $('#group-tg').show();
+        }
+
+        var actionType = $("#@Html.FieldIdFor(model => model.ActionTypeId)").val();
+            $('#group-users').hide();
+            $('#group-wd').hide();
+            $('#group-se').hide();
+            if (actionType == "45") {
+                $('#group-users').show();
+            } else if (actionType == "43") {
+                $('#group-wd').show();
+            } else if (actionType == "44") {
+                $('#group-se').show();
+            }
+        }
+
+    $(document).ready(function () {
+        toggleGroups();
+
+        $("#@Html.FieldIdFor(model => model.TriggerType)").change(function () {
+            toggleGroups();
+        });
+
+        $("#@Html.FieldIdFor(model => model.ActionTypeId)").change(function () {
+            toggleGroups();
+        });
+    });
+</script>
+
+<div class="content">
+    <div class="form-horizontal">
+        <div id="automatedAction-edit" class="nav-tabs-custom">
+            <ul class="nav nav-tabs">
+                @Html.RenderBootstrapTabHeader("tab-info", @T("AutomatedAction.Info"), true)
+            </ul>
+            <div class="tab-content">
+                @Html.RenderBootstrapTabContent("tab-info", @TabInfo(), true)
+            </div>
+        </div>
+    </div>
+</div>
+
+@{
+    //custom tabs
+    var eventMessage = new AdminTabStripCreated(this.Html, "automatedAction-edit");
+    EngineContext.Current.Resolve<IEventPublisher>().Publish(eventMessage);
+    foreach (var eventBlock in eventMessage.BlocksToRender)
+    {
+        @eventBlock
+    }
+}
+
+@helper TabInfo()
+{
+    <div class="panel-group">
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-10">
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.Name, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamEditorFor(model => model.Name)
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.Description)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamEditorFor(model => model.Description)
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.EntityType, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamComboBoxFor(model => model.EntityType, "AuditTrailEntities", "Common")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr/>
+                <h4>@T("AutomatedAction.ExecuteOn")</h4>
+                <div class="row">
+                    <div class="col-md-10">
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.WhenUsed, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamEditorFor(model => model.WhenUsed)
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.Expression)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamTextAreaFor(model => model.Expression)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr />
+                <h4>@T("AutomatedAction.WhenToTrigger")</h4>
+                <div class="row">
+                    <div class="col-md-10">
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.TriggerType, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.EnumDropDownListFor(model => model.TriggerType, new { @class = "form-control" })
+                            </div>
+                        </div>
+                        <div class="form-group" id="group-tg">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.HoursAfter, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamEditorFor(model => model.HoursAfter)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr />
+                <h4>@T("AutomatedAction.Action")</h4>
+                <div class="row">
+                    <div class="col-md-10">
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.ActionTypeId)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamComboBoxFor(model => model.ActionTypeId, "ValueItems", "Common",
+                                            new RouteValueDictionary { { "additionalField", "category" }, { "additionalValue", "Action Type" } }, true)
+                            </div>
+                        </div>
+                        <div class="form-group" id="group-users">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.Users, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamEditorFor(model => model.Users)
+                            </div>
+                        </div>
+                        <div class="form-group" id="group-users">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.MessageTemplate, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamEditorFor(model => model.MessageTemplate)
+                            </div>
+                        </div>
+                        <div class="form-group" id="group-wd">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.WorkflowDefinitionId, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamComboBoxFor(model => model.WorkflowDefinitionId, "GetChoices", "Common",
+                                            new RouteValueDictionary { { "dbTable", "WorkflowDefinition" }, { "dbTextColumn", "Name" }, { "dbValueColumn", "Id" } }, true)
+                            </div>
+                        </div>
+                        <div class="form-group" id="group-se">
+                            <div class="col-md-3">
+                                @Html.BaseEamLabelFor(model => model.SetExpression, required: true)
+                            </div>
+                            <div class="col-md-9">
+                                @Html.BaseEamEditorFor(model => model.SetExpression)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @if (Model.Id > 0 && Model.IsNew == false)
+                {
+                    <hr />
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <div class="col-md-3">
+                                    @Html.BaseEamLabelFor(model => model.FirstCreatedBy)
+                                </div>
+                                <div class="col-md-9">
+                                    @Html.BaseEamDisplayFor(model => model.FirstCreatedBy)
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-md-3">
+                                    @Html.BaseEamLabelFor(model => model.LastUpdatedBy)
+                                </div>
+                                <div class="col-md-9">
+                                    @Html.BaseEamDisplayFor(model => model.LastUpdatedBy)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}

@@ -1,0 +1,170 @@
+﻿@using BaseEAM.Services.Security
+@model SLAInstanceModel
+@{
+    var defaultGridPageSize = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().DefaultGridPageSize;
+    var gridPageSizes = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().GridPageSizes;
+
+    var slaInstanceRepository = EngineContext.Current.Resolve<BaseEAM.Core.Data.IRepository<SLAInstance>>();
+    var slaInstance = slaInstanceRepository.GetAll().Where(s => s.EntityId == Model.EntityId && s.EntityType == Model.EntityType).FirstOrDefault();
+    if(slaInstance != null)
+    {
+        Model.SLADefinitionId = slaInstance.SLADefinitionId;
+    }
+}
+<div id="group-slaInstance" class="panel-group">
+    @Html.Hidden("SLAInstanceId", slaInstance == null ? 0 : slaInstance.Id)
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group">
+                <div class="col-md-3">
+                    @Html.BaseEamLabelFor(model => model.SLADefinitionId, required: true)
+                </div>
+                <div class="col-md-9">
+                    @Html.BaseEamComboBoxFor(model => model.SLADefinitionId, "SLADefinitions", "Common",
+                                            new RouteValueDictionary { { "additionalField", "entityType" }, { "additionalValue", Model.EntityType } }, true, aysIgnore: true)
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="panel panel-default">
+        <div class="panel-heading">
+        </div>
+        <div class="panel-body">
+            <div id="slaInstanceMeters-error" class="validation-summary-errors none-display">
+            </div>
+            <div id="slaInstanceMeters-grid"></div>
+            <script>
+                var gridCheckboxHandlerForSLAInstance = new BaseEam.CheckBoxHandler('slaInstanceMeters-grid');
+                gridCheckboxHandlerForSLAInstance.init();
+
+                $(document).ready(function () {
+                    $("#slaInstanceMeters-grid").kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("SLAInstanceMeterList", "SLADefinition"))",
+                                    type: "POST",
+                                    dataType: "json",
+                                    data: additionalDataForSLAInstance
+                                },
+                                //This is used to map field to format that the server can understand
+                                //it runs after the data (additionalData) populated
+                                parameterMap: function(data, operation) {
+                                    sortMapping = [
+                                        { from: "SLATermName", to: "SLATerm.Name" },
+                                        { from: "SLATermTrackingBaseField", to: "SLATerm.TrackingBaseField" },
+                                        { from: "SLATermTrackingField", to: "SLATerm.TrackingField" },
+                                        { from: "SLATermLimitHours", to: "SLATerm.LimitHours" },
+                                        { from: "SLATermLimitMinutes", to: "SLATerm.LimitMinutes" }
+                                    ];
+                                    BaseEam.Grid.mapSortColumns(data.sort, sortMapping);
+                                    return data;
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: "Id",
+                                    fields: {
+                                    }
+                                }
+                            },
+                            error: function(e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)],
+                            @Html.Partial("_GridPagerMessages")
+                        },
+                        sortable: true,
+                        editable: false,
+                        scrollable: false,
+                        dataBound: gridCheckboxHandlerForSLAInstance.onDataBound,
+                        columns: [{
+                            field: "SLATermName",
+                            title: "@T("SLATerm")"
+                        },{
+                            field: "SLATermTrackingBaseField",
+                            title: "@T("SLATerm.TrackingBaseField")",
+                        },{
+                            field: "SLATermTrackingField",
+                            title: "@T("SLATerm.TrackingField")",
+                        },{
+                            field: "SLATermLimitHours",
+                            title: "@T("SLATerm.LimitHours")",
+                        },{
+                            field: "SLATermLimitMinutes",
+                            title: "@T("SLATerm.LimitMinutes")",
+                        },{
+                            field: "TrackingBaseDateTime",
+                            title: "@T("SLAInstanceTerm.TrackingBaseDateTime")",
+                            template: '#= TrackingBaseDateTime != null ? kendo.toString(kendo.parseDate(TrackingBaseDateTime, "MM/dd/yyyy"), "MM/dd/yyyy") : "" #',
+                        },{
+                            field: "TrackingDateTime",
+                            title: "@T("SLAInstanceTerm.TrackingDateTime")",
+                            template: '#= TrackingDateTime != null ? kendo.toString(kendo.parseDate(TrackingDateTime, "MM/dd/yyyy"), "MM/dd/yyyy") : "" #',
+                        },{
+                            field: "Violated",
+                            title: "@T("Common.Violated")",
+                        }]
+                    });
+                });
+            </script>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+
+    $("#SLADefinitionId").change(function (e) {
+        e.preventDefault();
+        if ($("#SLADefinitionId").val() == '') {
+            return false;
+        }
+        var postData = {
+            slaDefinitionId: $("#SLADefinitionId").val(),
+            entityId: @Model.EntityId,
+            entityType: '@Model.EntityType'
+        };
+        addAntiForgeryToken(postData);
+        $.ajax({
+            cache: false,
+            type: "POST",
+            url: "@(Url.Action("CreateSLAInstanceMeters", "SLADefinition"))",
+            data: postData,
+            success: function (data) {
+                if (data && data.Errors) {
+                    showErrors(data.Errors, '#validation-summary');
+                } else {
+                    $("#group-slaInstance").find("#SLAInstanceId").val(data.slaInstanceId);
+                    //refresh grid
+                    var grid = $('#slaInstanceMeters-grid').data('kendoGrid');
+                    grid.dataSource.page(1);
+                }
+            },
+            error: function (xhr, ajaxOptions, thrownError) {
+                showBSModal({ title: 'ERROR', body: thrownError });
+            },
+            traditional: true
+        });
+    });
+
+    function additionalDataForSLAInstance() {
+        var data = {
+            slaInstanceId: $("#group-slaInstance").find("#SLAInstanceId").val()
+        };
+        addAntiForgeryToken(data);
+        return data;
+    }
+</script>

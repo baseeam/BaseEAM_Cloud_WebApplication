@@ -1,0 +1,214 @@
+﻿@using BaseEAM.Services.Security
+@model PurchaseOrderMiscCostModel
+@{
+    var defaultGridPageSize = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().DefaultGridPageSize;
+    var gridPageSizes = EngineContext.Current.Resolve<BaseEAM.Core.Domain.GeneralSettings>().GridPageSizes;
+    var primarySystemCurrencySymbol = EngineContext.Current.Resolve<BaseEAM.Core.IWorkContext>().WorkingCurrency.CurrencySymbol;
+
+    var permissionService = EngineContext.Current.Resolve<BaseEAM.Services.IPermissionService>();
+    var allowCreate = permissionService.Authorize(StandardPermissionName.Purchasing_PurchaseOrder_Create);
+    var allowRead = permissionService.Authorize(StandardPermissionName.Purchasing_PurchaseOrder_Read);
+    var allowUpdate = permissionService.Authorize(StandardPermissionName.Purchasing_PurchaseOrder_Update);
+    var allowDelete = permissionService.Authorize(StandardPermissionName.Purchasing_PurchaseOrder_Delete);
+}
+<div id="group-purchaseOrderMiscCosts" class="panel-group" data-bind="visible: !isNew()">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <button type="button" id="createPurchaseOrderMiscCost" class="btn btn-primary@(allowCreate || allowUpdate ? "" : " none-display")" title="@T("Common.AddNew")">
+                <i class="fa fa-plus-square"></i>
+            </button>
+            <button type="button" id="deleteSelectedPurchaseOrderMiscCosts" class="btn btn-primary@(allowCreate || allowUpdate ? "" : " none-display")" title="@T("Common.Delete.Selected")">
+                <i class="fa fa-trash-o"></i>
+            </button>
+        </div>
+        <div class="panel-body">
+            <div id="purchaseOrderMiscCosts-grid"></div>
+            <script>
+                var gridCheckboxHandler = new BaseEam.CheckBoxHandler('purchaseOrderMiscCosts-grid');
+                gridCheckboxHandler.init();
+
+                $(document).ready(function () {
+                    $("#purchaseOrderMiscCosts-grid").kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("PurchaseOrderMiscCostList", "PurchaseOrder"))",
+                                    type: "POST",
+                                    dataType: "json",
+                                    data: additionalData2
+                                },
+                                parameterMap: function(data, operation) {
+                                    sortMapping = [
+                                        {
+                                            from: "POMiscCostTypeName", to: "POMiscCostType.Name"
+                                        }
+                                    ];
+                                    BaseEam.Grid.mapSortColumns(data.sort, sortMapping);
+                                    return data;
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: "Id"
+                                }
+                            },
+                            error: function(e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)],
+                            @Html.Partial("_GridPagerMessages")
+                        },
+                        sortable: true,
+                        editable: false,
+                        scrollable: false,
+                        dataBound: function(e) {
+                            gridCheckboxHandler.onDataBound(e);
+                        },
+                        columns: [{
+                            field: "Id",
+                            headerTemplate: "<input id='purchaseOrderMiscCosts-grid-mastercheckbox' type='checkbox'/>",
+                            headerAttributes: { style: "text-align:center" },
+                            attributes: { style: "text-align:center" },
+                            template: "<input type='checkbox' value='#=Id#' class='checkboxGroups'/>",
+                            width: 50,
+                            sortable: false
+                        },{
+                            field: "POMiscCostTypeName",
+                            title: "@T("PurchaseOrderMiscCost.POMiscCostType")"
+                        },{
+                            field: "Description",
+                            title: "@T("Common.Description")"
+                        },{
+                            field: "Amount",
+                            title: "@T("Common.Amount") [@(primarySystemCurrencySymbol)]",
+                            template: '#= Amount != null ? kendo.toString(Amount, "n") : "" #'
+                        }, {
+                            field: "Id",
+                            headerTemplate: "",
+                            width: 100,
+                            template: '<button type="button" class="btn btn-primary@(allowRead || allowUpdate ? "" : " none-display")" onclick="editPurchaseOrderMiscCost(event, #=Id#);"></span><i class="fa fa-pencil aria-hidden="true""></i></a>' +
+                                    '<button type="button" class="deleteRow btn btn-primary@(allowDelete ? "" : " none-display")" onclick="deletePurchaseOrderMiscCost(event, #=Id#);"></span><i class="fa fa-trash aria-hidden="true""></i></a>',
+                            sortable: false
+                        }]
+                    });
+                });
+            </script>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+
+    function editPurchaseOrderMiscCost(e, id){
+        e.preventDefault();
+        //check if panel-purchaseOrderMiscCost is open => close it before edit
+        if($('#panel-purchaseOrderMiscCost').is(":visible")){
+            togglePanelPurchaseOrderMiscCost(false);
+        }
+
+        var postData = {
+            id : id
+        };
+        addAntiForgeryToken(postData);
+
+        $.ajax({
+            cache: false,
+            type: "POST",
+            url: "@(Url.Action("PurchaseOrderMiscCost", "PurchaseOrder"))",
+            data: postData,
+            success: function(data) {
+                //append html
+                $("#group-purchaseOrderMiscCosts").append(data.Html);
+
+                //apply binding for the newly generated element
+                ko.applyBindings(viewModel, $("#panel-purchaseOrderMiscCost")[0]);
+
+                //then toggle the panel
+                togglePanelPurchaseOrderMiscCost(true);
+            },
+            error: function(xhr, ajaxOptions, thrownError) {
+                showBSModal({title: 'ERROR', body: thrownError});
+            },
+            traditional: true
+        });
+    };
+
+    function deletePurchaseOrderMiscCost(e, id){
+        e.preventDefault();
+        //check if panel-purchaseOrderMiscCost is open => close it before delete
+        if($('#panel-purchaseOrderMiscCost').is(":visible")){
+            togglePanelPurchaseOrderMiscCost(false);
+        }
+
+        BaseEam.Grid.deleteRow($("#Id").val(), id, "@Url.Action("DeletePurchaseOrderMiscCost", "PurchaseOrder")", "purchaseOrderMiscCosts-grid", "", true);
+    };
+
+    function additionalData2() {
+        var data = {
+            purchaseOrderId: $("#Id").val()
+        };
+        addAntiForgeryToken(data);
+        return data;
+    }
+
+    function togglePanelPurchaseOrderMiscCost(editmode) {
+        if (editmode) {
+            $('#panel-purchaseOrderMiscCost').show();
+            $('#createPurchaseOrderMiscCost').hide();
+            $('#deleteSelectedPurchaseOrderMiscCosts').hide();
+        }
+        else {
+            ////remove the panel html so we won't care
+            //about dirty change tracking for newly added input tag
+            $('#panel-purchaseOrderMiscCost').remove();
+            $('#createPurchaseOrderMiscCost').show();
+            $('#deleteSelectedPurchaseOrderMiscCosts').show();
+        }
+    }
+
+    $(document).ready(function () {
+        $("#createPurchaseOrderMiscCost").click(function(e){
+            e.preventDefault();
+            var postData = {
+                purchaseOrderId : $("#Id").val()
+            };
+            addAntiForgeryToken(postData);
+
+            $.ajax({
+                cache: false,
+                type: "POST",
+                url: "@(Url.Action("CreatePurchaseOrderMiscCost", "PurchaseOrder"))",
+                data: postData,
+                success: function(data) {
+                    //append html
+                    $("#group-purchaseOrderMiscCosts").append(data.Html);
+
+                    //then toggle the panel
+                    togglePanelPurchaseOrderMiscCost(true);
+                },
+                error: function(xhr, ajaxOptions, thrownError) {
+                    showBSModal({title: 'ERROR', body: thrownError});
+                },
+                traditional: true
+            });
+        });
+
+        $("#deleteSelectedPurchaseOrderMiscCosts").click(function(e){
+            e.preventDefault();
+            BaseEam.Grid.deleteSelectedRows($("#Id").val(), gridCheckboxHandler.selectedIds, "@Url.Action("DeleteSelectedPurchaseOrderMiscCosts", "PurchaseOrder")", "purchaseOrderMiscCosts-grid", "", true);
+        });
+    });
+</script>

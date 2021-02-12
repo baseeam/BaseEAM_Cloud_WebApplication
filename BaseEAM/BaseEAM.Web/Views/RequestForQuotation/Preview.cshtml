@@ -1,0 +1,123 @@
+﻿@model RequestForQuotationPrintModel
+
+@{
+    Layout = "~/Views/Shared/_AdminPopupLayout.cshtml";
+}
+
+@{
+    var primarySystemCurrencySymbol = EngineContext.Current.Resolve<BaseEAM.Core.IWorkContext>().WorkingCurrency.CurrencySymbol;
+}
+
+
+<style type="text/css">
+    .document-title h2, .document-title h3 {
+        display: inline-block;
+    }
+
+    .table > tbody > tr > .no-line {
+        border-top: none;
+    }
+
+    .table > thead > tr > .no-line {
+        border-bottom: none;
+    }
+
+    .table > tbody > tr > .thick-line {
+        border-top: 2px solid;
+    }
+</style>
+
+<div class="container">
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="document-title">
+                <h2>Request For Quotation # @Model.Number</h2>
+            </div>
+            <br>
+            <div class="row">
+                <div class="col-xs-6">
+                    <strong>@T("RequestForQuotation.ExpectedQuoteDate"):</strong> @(Model.ExpectedQuoteDate.HasValue ? Model.ExpectedQuoteDate.Value.ToString("MM/dd/yyyy HH:mm:ss") : "")<br>
+                </div>
+            </div>
+            <br>
+            <div class="row">
+                <div class="col-xs-6">
+                    <address>
+                        <strong>Ship To:</strong><br>
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressCountry))
+                        {
+                            @Model.ShipToAddressCountry<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressStateProvince))
+                        {
+                            @Model.ShipToAddressStateProvince<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressCity))
+                        {
+                            @Model.ShipToAddressCity<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressAddress1))
+                        {
+                            @Model.ShipToAddressAddress1<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressAddress2))
+                        {
+                            @Model.ShipToAddressAddress2<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressZipPostalCode))
+                        {
+                            @Model.ShipToAddressZipPostalCode<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressPhoneNumber))
+                        {
+                            @Model.ShipToAddressPhoneNumber<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressFaxNumber))
+                        {
+                            @Model.ShipToAddressFaxNumber<br>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ShipToAddressEmail))
+                        {
+                            @Model.ShipToAddressEmail<br>
+                        }
+                    </address>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title"><strong>Request For Quotation Summary</strong></h3>
+                </div>
+                <div class="panel-body">
+                    <div class="table-responsive">
+                        <table class="table table-condensed">
+                            <thead>
+                                <tr>
+                                    <td class="text-center"><strong>@T("Common.Sequence")</strong></td>
+                                    <td class="text-center"><strong>@T("Item")</strong></td>
+                                    <td class="text-center"><strong>@T("UnitOfMeasure")</strong></td>
+                                    <td class="text-center"><strong>@T("RequestForQuotationItem.QuantityRequested")</strong></td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.RequestForQuotationItems)
+                                {
+                                    <tr>
+                                        <td class="text-center"><strong>@item.Sequence</strong></td>
+                                        <td class="text-center"><strong>@item.ItemName</strong></td>
+                                        <td class="text-center"><strong>@item.ItemUnitOfMeasureName</strong></td>
+                                        <td class="text-center"><strong>@(item.QuantityRequested.HasValue ? item.QuantityRequested.Value.ToString("F") : "")</strong></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
